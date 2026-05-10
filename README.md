@@ -1,7 +1,41 @@
-
 print("Tsukuyomihub やおよろー！")
 
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/jadpy/suki/refs/heads/main/orion"))()
+
+-- ピンクグラデーションエフェクト（自動適用）
+local function applyPinkGradientEffect()
+    local CoreGui = game:GetService("CoreGui")
+    local _Players2 = game:GetService("Players")
+    local _time2 = 0
+    local _strokes2 = {}
+    local function _reg2(obj)
+        if obj:IsA("UIStroke") then table.insert(_strokes2, obj) end
+    end
+    local function _scan2(gui)
+        for _, v in ipairs(gui:GetDescendants()) do _reg2(v) end
+        gui.DescendantAdded:Connect(_reg2)
+    end
+    local _plr2 = _Players2.LocalPlayer
+    if _plr2 then
+        local _pg2 = _plr2:WaitForChild("PlayerGui")
+        pcall(_scan2, CoreGui)
+        pcall(_scan2, _pg2)
+    end
+    local function _pinkColor(t)
+        local c = {Color3.fromRGB(255,182,193), Color3.fromRGB(255,105,180), Color3.fromRGB(219,112,147)}
+        local p = (math.sin(t*2)+1)/2
+        if p < 0.5 then return c[1]:Lerp(c[2], p*2) else return c[2]:Lerp(c[3], (p-0.5)*2) end
+    end
+    game:GetService("RunService").RenderStepped:Connect(function(dt)
+        _time2 = _time2 + dt*0.5
+        for i = #_strokes2, 1, -1 do
+            local s = _strokes2[i]
+            if s and s.Parent then s.Color = _pinkColor(_time2 + i*0.01)
+            else table.remove(_strokes2, i) end
+        end
+    end)
+end
+pcall(applyPinkGradientEffect)
 
 local service = {
 	Workspace = game:GetService("Workspace"),
@@ -1508,6 +1542,1307 @@ end
 
 RefreshPlayer()
 
+-- ====================================================================
+-- さくらhub 統合ブロック
+-- ====================================================================
+local LocalPlayer = localPlayer
+local Players     = service.Players
+local RunService  = service.RunService
+local UserInputService = game:GetService("UserInputService")
+
+local Theme = { SliderColor = Color3.fromRGB(255, 105, 180) }
+
+-- オブジェクトID設定
+local ObjectIDConfig = {
+    CurrentObjectID = "FireworkSparkler",
+    AvailableObjects = {
+        "FireworkSparkler","PalletLightBrown","GlassBoxGray","MusicKeyboard",
+        "SpookyCandle1","Tetracube1","NinjaKatana","YouDecoy","BombMissile",
+        "LadderLightBrown","CreatureBlobman","DiscoColorBall","MineralCrystalPink",
+        "FloatingIsland","FlyingToyUfo","JukeboxBlue","JukeboxOrange","CouchBlue",
+        "CouchPink","CouchWhite","Boombox","FireworkMissile","Snowflake",
+        "SpookyCandle5","MineralDiamond","TractorGreen","TractorOrange","TractorRed"
+    }
+}
+
+-- フェザー設定
+local FeatherConfig = {
+    Enabled=false, spacing=3, heightOffset=2, backwardOffset=3,
+    maxSparklers=20, tiltAngle=45, waveSpeed=2, baseAmplitude=1,
+}
+local FeatherToys={}; local FeatherRowPoints={}; local FeatherAssignedToys={}
+local FeatherLoopConn=nil; local FeatherTime=0
+
+-- 魔法陣設定
+local MagicCircleConfig = {
+    Enabled=false, Height=5.0, Diameter=5.0, ObjectCount=10,
+    RotationSpeed=20.0, SymbolType="Ring", GlowEffect=true, GlowIntensity=1.0,
+}
+local MagicCircleList={}; local MagicCircleLoopConn=nil; local MagicCircleTAccum=0
+
+-- ♡ハート// 設定
+local HeartConfig2 = {
+    Enabled=false, Height=5.0, Size=5.0, ObjectCount=12,
+    RotationSpeed=1.0, PulseSpeed=2.0, PulseAmplitude=0.5, FollowPlayer=true,
+}
+local HeartToys2={}; local HeartPoints2={}; local HeartAssignedToys2={}
+local HeartLoopConn2=nil; local HeartTime2=0
+
+-- おっきぃ♡ 設定
+local BigHeartConfig = {
+    Enabled=false, Height=8.0, Size=10.0, ObjectCount=20,
+    RotationSpeed=0.5, RotationSpeedMax=10.0, PulseSpeed=1.0,
+    PulseSpeedMax=10.0, PulseAmplitude=1.0, FollowPlayer=true,
+    HeartScale=2.0, VerticalStretch=1.2,
+}
+local BigHeartToys={}; local BigHeartPoints={}; local BigHeartAssignedToys={}
+local BigHeartLoopConn=nil; local BigHeartTime=0
+
+-- ダビデの星設定
+local StarOfDavidConfig = {
+    Enabled=false, Height=5.0, Size=5.0, ObjectCount=12,
+    RotationSpeed=1.0, PulseSpeed=1.5, FollowPlayer=true, TriangleHeight=0.5,
+}
+local StarOfDavidToys={}; local StarOfDavidPoints={}; local StarOfDavidAssignedToys={}
+local StarOfDavidLoopConn=nil; local StarOfDavidTime=0
+
+-- スター設定
+local StarConfig = {
+    Enabled=false, Height=5.0, Size=5.0, ObjectCount=10,
+    RotationSpeed=1.0, TwinkleSpeed=2.0, FollowPlayer=true,
+    StarPoints=5, OuterRadius=5.0, InnerRadius=2.0,
+}
+local StarToys={}; local StarPoints2={}; local StarAssignedToys={}
+local StarLoopConn=nil; local StarTime=0
+
+-- スター2設定
+local Star2Config = {
+    Enabled=false, Height=10.0, Size=15.0, ObjectCount=24,
+    RotationSpeed=5.0, RotationSpeedMax=30.0, PulseSpeed=8.0,
+    PulseSpeedMax=20.0, PulseAmplitude=2.0, FollowPlayer=true,
+    RayCount=12, RayLength=3.0, RayLengthMax=10.0, JitterSpeed=5.0,
+    JitterAmount=1.0, SizeMax=30.0, MaxDistance=50.0,
+}
+local Star2Toys={}; local Star2Points={}; local Star2AssignedToys={}
+local Star2LoopConn=nil; local Star2Time=0
+
+-- 球体設定
+local SphereConfig = {
+    Enabled=false, BaseHeight=0, Radius=5.0, ObjectCount=20,
+    HorizontalRotationSpeed=2.0, VerticalRotationSpeed=1.0, SpiralSpeed=0.5,
+    WaveSpeed=1.0, WaveAmplitude=0.3, FollowPlayer=true,
+    Latitudes=3, Longitudes=6, PulseSpeed=1.0, PulseAmplitude=0.5,
+}
+local SphereToys={}; local SpherePoints={}; local SphereAssignedToys={}
+local SphereLoopConn=nil; local SphereTime=0
+
+-- 観覧車設定
+local FerrisWheelConfig = {
+    Enabled=false, Height=15.0, Radius=10.0, ObjectCount=12,
+    RotationSpeed=1.0, RotationSpeedMax=5.0, FollowPlayer=true,
+    VerticalCircle=true, TiltAngle=0, PulseEffect=false,
+    PulseSpeed=1.0, PulseAmplitude=2.0, SwingEffect=false, SwingAmount=0.5,
+    FixedDirection=true, FixedYaw=0, FixedPitch=0, FixedRoll=0,
+}
+local FerrisWheelToys={}; local FerrisWheelPoints={}; local FerrisWheelAssignedToys={}
+local FerrisWheelLoopConn=nil; local FerrisWheelTime=0
+
+-- アニメーションN1 (カオス・サークル)
+local AnimN1Config = {
+    Enabled=false, Height=10.0, Radius=15.0, ObjectCount=50,
+    RotationSpeed=20.0, PulseSpeed=5.0, PulseAmount=10.0, FollowPlayer=true,
+}
+local AnimN1Toys={}; local AnimN1Points={}; local AnimN1AssignedToys={}
+local AnimN1LoopConn=nil; local AnimN1Time=0
+
+-- アニメーションN2 (トルネード・スパイラル)
+local AnimN2Config = {
+    Enabled=false, BaseHeight=5.0, TopHeight=30.0, Radius=8.0, ObjectCount=60,
+    RotationSpeed=15.0, RiseSpeed=2.0, ChaosFactor=3.0, FollowPlayer=true,
+}
+local AnimN2Toys={}; local AnimN2Points={}; local AnimN2AssignedToys={}
+local AnimN2LoopConn=nil; local AnimN2Time=0
+
+-- アニメーションN3 (ハイパー・エクスプロージョン)
+local AnimN3Config = {
+    Enabled=false, Height=8.0, ExplosionRadius=25.0, ObjectCount=80,
+    CycleSpeed=2.0, ExplosionSpeed=10.0, Randomness=5.0, FollowPlayer=true,
+}
+local AnimN3Toys={}; local AnimN3Points={}; local AnimN3AssignedToys={}
+local AnimN3LoopConn=nil; local AnimN3Time=0
+
+-- TPWalk / シンプルESP 設定
+local UtilityConfig = {
+    TPWalk=false, TPWalkSpeed=50, TPWalkSpeedMax=500,
+    SimpleESP=false, FOV2=70, OriginalFOV2=70,
+}
+local TPWalkConnection2=nil; local OriginalWalkSpeed2=16
+local SimpleESPConnection=nil; local SimpleESPLabels={}
+
+-- ====================================================================
+-- さくらhub 共通ユーティリティ関数
+-- ====================================================================
+local function findObjects()
+    local toys={}
+    for _, item in ipairs(workspace:GetDescendants()) do
+        if item:IsA("Model") and item.Name==ObjectIDConfig.CurrentObjectID then
+            local ok=false
+            for _,e in ipairs(toys) do if e==item then ok=true; break end end
+            if not ok then table.insert(toys, item) end
+        end
+    end
+    return toys
+end
+
+local function getPrimaryPart(model)
+    if model.PrimaryPart then return model.PrimaryPart end
+    local names={"Handle","Main","Part","Base","Sparkler","Firework","Blade","Candle",
+        "Keyboard","Box","Decoy","Missile","Ladder","Blob","Ball","Crystal",
+        "Island","Ufo","Jukebox","Couch","Boombox","Snowflake","Diamond","Tractor"}
+    for _, n in ipairs(names) do
+        local p=model:FindFirstChild(n)
+        if p and p:IsA("BasePart") then return p end
+    end
+    for _, c in ipairs(model:GetChildren()) do
+        if c:IsA("BasePart") then return c end
+    end
+    return nil
+end
+
+local function attachPhysics(part, pValue, dValue)
+    if not part then return nil, nil end
+    local eBG=part:FindFirstChildOfClass("BodyGyro")
+    local eBP=part:FindFirstChildOfClass("BodyPosition")
+    if eBG and eBP then return eBG, eBP end
+    if eBG then eBG:Destroy() end
+    if eBP then eBP:Destroy() end
+    local BP=Instance.new("BodyPosition")
+    local BG=Instance.new("BodyGyro")
+    BP.P=pValue or 15000; BP.D=dValue or 200
+    BP.MaxForce=Vector3.new(1,1,1)*1e10; BP.Parent=part
+    BG.P=pValue or 15000; BG.D=dValue or 200
+    BG.MaxTorque=Vector3.new(1,1,1)*1e10; BG.Parent=part
+    return BG, BP
+end
+
+local function disableCollisionAll(toy)
+    for _, c in ipairs(toy:GetChildren()) do
+        if c:IsA("BasePart") then c.CanCollide=false; c.CanTouch=false; c.Anchored=false end
+    end
+end
+
+-- forward-declare toggles (mutal exclusion)
+local toggleFeather, toggleMagicCircle, toggleHeart2, toggleBigHeart
+local toggleStarOfDavid, toggleStar, toggleStar2, toggleSphere
+local toggleFerrisWheel, toggleAnimN1, toggleAnimN2, toggleAnimN3
+
+local function stopAllAnimations()
+    if FeatherConfig.Enabled then toggleFeather(false) end
+    if MagicCircleConfig.Enabled then toggleMagicCircle(false) end
+    if HeartConfig2.Enabled then toggleHeart2(false) end
+    if BigHeartConfig.Enabled then toggleBigHeart(false) end
+    if StarOfDavidConfig.Enabled then toggleStarOfDavid(false) end
+    if StarConfig.Enabled then toggleStar(false) end
+    if Star2Config.Enabled then toggleStar2(false) end
+    if SphereConfig.Enabled then toggleSphere(false) end
+    if FerrisWheelConfig.Enabled then toggleFerrisWheel(false) end
+    if AnimN1Config.Enabled then toggleAnimN1(false) end
+    if AnimN2Config.Enabled then toggleAnimN2(false) end
+    if AnimN3Config.Enabled then toggleAnimN3(false) end
+end
+
+local function changeObjectID(id)
+    if id==ObjectIDConfig.CurrentObjectID then return end
+    ObjectIDConfig.CurrentObjectID=id
+    local wasActive={}
+    if FeatherConfig.Enabled then table.insert(wasActive,toggleFeather) end
+    if MagicCircleConfig.Enabled then table.insert(wasActive,toggleMagicCircle) end
+    if HeartConfig2.Enabled then table.insert(wasActive,toggleHeart2) end
+    if BigHeartConfig.Enabled then table.insert(wasActive,toggleBigHeart) end
+    if StarOfDavidConfig.Enabled then table.insert(wasActive,toggleStarOfDavid) end
+    if StarConfig.Enabled then table.insert(wasActive,toggleStar) end
+    if Star2Config.Enabled then table.insert(wasActive,toggleStar2) end
+    if SphereConfig.Enabled then table.insert(wasActive,toggleSphere) end
+    if FerrisWheelConfig.Enabled then table.insert(wasActive,toggleFerrisWheel) end
+    if AnimN1Config.Enabled then table.insert(wasActive,toggleAnimN1) end
+    if AnimN2Config.Enabled then table.insert(wasActive,toggleAnimN2) end
+    if AnimN3Config.Enabled then table.insert(wasActive,toggleAnimN3) end
+    stopAllAnimations()
+    task.wait(0.5)
+    for _,f in ipairs(wasActive) do f(true) end
+    OrionLib:MakeNotification({Name="オブジェクトID変更",Content=id.." に切り替えました",Time=3})
+end
+
+-- ====================================================================
+-- フェザー関数
+-- ====================================================================
+local function createFeatherRowPoints(count)
+    local points={}
+    if count==0 then return points end
+    local half=math.floor(count/2)
+    local odd=count%2==1
+    for i=1,count do
+        local x=odd and (i-math.ceil(count/2))*FeatherConfig.spacing or (i-half-0.5)*FeatherConfig.spacing
+        local p=Instance.new("Part")
+        p.CanCollide=false;p.Anchored=true;p.Transparency=1
+        p.Size=Vector3.new(4,1,4);p.Parent=workspace
+        points[i]={offsetX=x,part=p,assignedToy=nil}
+    end
+    return points
+end
+
+local function assignFeatherToysToPoints()
+    FeatherAssignedToys={}
+    local dg={}
+    for i,pt in ipairs(FeatherRowPoints) do
+        local abs=math.abs(pt.offsetX)
+        if not dg[abs] then dg[abs]={} end
+        table.insert(dg[abs],i)
+    end
+    local sd={}; for d in pairs(dg) do table.insert(sd,d) end; table.sort(sd)
+    for rank,d in ipairs(sd) do
+        for _,pi in ipairs(dg[d]) do FeatherRowPoints[pi].distanceRank=rank end
+    end
+    for i=1,math.min(#FeatherToys,#FeatherRowPoints) do
+        local toy=FeatherToys[i]
+        if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+            local pp=getPrimaryPart(toy)
+            if pp then
+                disableCollisionAll(toy)
+                local BG,BP=attachPhysics(pp)
+                local t={BG=BG,BP=BP,Pallet=pp,Model=toy,RowIndex=i,
+                    offsetX=FeatherRowPoints[i].offsetX,distanceRank=FeatherRowPoints[i].distanceRank}
+                FeatherRowPoints[i].assignedToy=t
+                table.insert(FeatherAssignedToys,t)
+            end
+        end
+    end
+    return FeatherAssignedToys
+end
+
+local function startFeatherLoop()
+    if FeatherLoopConn then FeatherLoopConn:Disconnect();FeatherLoopConn=nil end
+    FeatherTime=0
+    FeatherLoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not FeatherConfig.Enabled or not LocalPlayer.Character then return end
+        local hrp=LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not hrp or not torso then return end
+        FeatherTime=FeatherTime+dt*FeatherConfig.waveSpeed
+        local cf=hrp.CFrame
+        local rv=cf.RightVector; local lv=cf.LookVector; local bv=-lv
+        local base=torso.Position+Vector3.new(0,FeatherConfig.heightOffset,0)+(bv*FeatherConfig.backwardOffset)
+        for _,pt in ipairs(FeatherRowPoints) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local tp=base+(rv*toy.offsetX)
+                local amp=FeatherConfig.baseAmplitude*toy.distanceRank
+                local wm=math.sin(FeatherTime)*amp
+                local fp=tp+Vector3.new(0,wm,0)
+                if pt.part then pt.part.Position=fp end
+                toy.BP.Position=fp
+                local yaw=math.atan2(-lv.X,-lv.Z)
+                local bCF=CFrame.new(fp)*CFrame.Angles(0,yaw,0)
+                local tCF=bCF*CFrame.Angles(math.rad(-FeatherConfig.tiltAngle),0,0)
+                toy.BG.CFrame=toy.BG.CFrame:Lerp(tCF,0.3)
+            end
+        end
+    end)
+end
+
+local function stopFeatherLoop()
+    if FeatherLoopConn then FeatherLoopConn:Disconnect();FeatherLoopConn=nil end
+    for _,pt in ipairs(FeatherRowPoints) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    FeatherRowPoints={}; FeatherAssignedToys={}
+end
+
+toggleFeather = function(state)
+    FeatherConfig.Enabled=state
+    if state then
+        stopAllAnimations(); FeatherConfig.Enabled=true
+        FeatherToys=findObjects()
+        FeatherRowPoints=createFeatherRowPoints(math.min(#FeatherToys,FeatherConfig.maxSparklers))
+        FeatherAssignedToys=assignFeatherToysToPoints()
+        startFeatherLoop()
+        OrionLib:MakeNotification({Name="フェザー開始",Content="数: "..#FeatherAssignedToys,Time=3})
+    else
+        stopFeatherLoop()
+        OrionLib:MakeNotification({Name="フェザー停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- 魔法陣関数
+-- ====================================================================
+local function attachMagicPhysics(rec)
+    local model=rec.model; local part=rec.part
+    if not model or not part or not part.Parent then return end
+    for _,p in ipairs(model:GetDescendants()) do
+        if p:IsA("BasePart") then
+            p.CanCollide=false; p.CanTouch=false
+            if MagicCircleConfig.GlowEffect then p.Material=Enum.Material.Neon end
+        end
+    end
+    if not part:FindFirstChild("MCBodyVelocity") then
+        local bv=Instance.new("BodyVelocity"); bv.Name="MCBodyVelocity"
+        bv.MaxForce=Vector3.new(1e8,1e8,1e8); bv.Velocity=Vector3.new(); bv.P=1e6; bv.Parent=part
+    end
+    if not part:FindFirstChild("MCBodyGyro") then
+        local bg=Instance.new("BodyGyro"); bg.Name="MCBodyGyro"
+        bg.MaxTorque=Vector3.new(1e8,1e8,1e8); bg.CFrame=part.CFrame; bg.P=1e6; bg.Parent=part
+    end
+end
+
+local function detachMagicPhysics(rec)
+    local part=rec.part; if not part then return end
+    local bv=part:FindFirstChild("MCBodyVelocity"); if bv then bv:Destroy() end
+    local bg=part:FindFirstChild("MCBodyGyro"); if bg then bg:Destroy() end
+    if rec.model then
+        for _,p in ipairs(rec.model:GetDescendants()) do
+            if p:IsA("BasePart") then p.CanCollide=true; p.CanTouch=true; p.Material=Enum.Material.Plastic end
+        end
+    end
+end
+
+local function rescanMagicCircle()
+    for _,r in ipairs(MagicCircleList) do detachMagicPhysics(r) end
+    MagicCircleList={}
+    local n=0
+    for _,d in ipairs(workspace:GetDescendants()) do
+        if n>=MagicCircleConfig.ObjectCount then break end
+        if d:IsA("Model") and d.Name==ObjectIDConfig.CurrentObjectID then
+            local part=getPrimaryPart(d)
+            if part and not part.Anchored then
+                table.insert(MagicCircleList,{model=d,part=part}); n=n+1
+            end
+        end
+    end
+    for _,r in ipairs(MagicCircleList) do attachMagicPhysics(r) end
+end
+
+local function startMagicCircleLoop()
+    if MagicCircleLoopConn then MagicCircleLoopConn:Disconnect();MagicCircleLoopConn=nil end
+    MagicCircleTAccum=0
+    MagicCircleLoopConn=RunService.Heartbeat:Connect(function(dt)
+        if not MagicCircleConfig.Enabled then return end
+        local root=HRP(); if not root or #MagicCircleList==0 then return end
+        MagicCircleTAccum=MagicCircleTAccum+dt*(MagicCircleConfig.RotationSpeed/10)
+        local radius=MagicCircleConfig.Diameter/2
+        local ai=360/#MagicCircleList
+        local rv=root.AssemblyLinearVelocity or Vector3.new()
+        for i,rec in ipairs(MagicCircleList) do
+            local part=rec.part; if not part or not part.Parent then continue end
+            local angle=math.rad(i*ai+MagicCircleTAccum*50)
+            local ho=0
+            if MagicCircleConfig.SymbolType=="Hexagram" then
+                ho=0.5*math.sin(angle*3)
+            elseif MagicCircleConfig.SymbolType=="Circle" then
+                ho=math.sin(angle*4)*0.3
+            end
+            local tp=root.Position+Vector3.new(radius*math.cos(angle),MagicCircleConfig.Height+ho,radius*math.sin(angle))
+            local dir=tp-part.Position; local dist=dir.Magnitude
+            local bv=part:FindFirstChild("MCBodyVelocity")
+            if bv then
+                bv.Velocity=(dist>0.1) and dir.Unit*math.min(3000,dist*50)+rv or rv
+            end
+            local bg=part:FindFirstChild("MCBodyGyro")
+            if bg then bg.CFrame=CFrame.lookAt(tp,root.Position)*CFrame.Angles(0,math.pi,0) end
+        end
+    end)
+end
+
+local function stopMagicCircleLoop()
+    if MagicCircleLoopConn then MagicCircleLoopConn:Disconnect();MagicCircleLoopConn=nil end
+    for _,rec in ipairs(MagicCircleList) do detachMagicPhysics(rec) end
+    MagicCircleList={}
+end
+
+toggleMagicCircle = function(state)
+    MagicCircleConfig.Enabled=state
+    if state then
+        stopAllAnimations(); MagicCircleConfig.Enabled=true
+        rescanMagicCircle(); startMagicCircleLoop()
+        OrionLib:MakeNotification({Name="魔法陣開始",Content="高さ:"..MagicCircleConfig.Height,Time=3})
+    else
+        stopMagicCircleLoop()
+        OrionLib:MakeNotification({Name="魔法陣停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- ♡ハート// 関数
+-- ====================================================================
+local function getHeartPos(t, size, pulse)
+    local sc=size/20
+    local x=16*(math.sin(t)^3)*sc
+    local y=(13*math.cos(t)-5*math.cos(2*t)-2*math.cos(3*t)-math.cos(4*t))*sc
+    if pulse~=0 then local f=1+pulse*0.1; x=x*f; y=y*f end
+    return x, y
+end
+
+local function startHeartLoop2()
+    if HeartLoopConn2 then HeartLoopConn2:Disconnect();HeartLoopConn2=nil end
+    HeartTime2=0
+    HeartLoopConn2=RunService.RenderStepped:Connect(function(dt)
+        if not HeartConfig2.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        HeartTime2=HeartTime2+dt
+        local base=torso.Position
+        local pulse=(HeartConfig2.PulseSpeed>0) and math.sin(HeartTime2*HeartConfig2.PulseSpeed)*HeartConfig2.PulseAmplitude or 0
+        for _,pt in ipairs(HeartPoints2) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local ca=toy.baseAngle+(HeartTime2*HeartConfig2.RotationSpeed)
+                local x,y=getHeartPos(ca,HeartConfig2.Size,pulse)
+                local ho=HeartConfig2.Height+(math.sin(ca*2)*0.5)
+                local tp=base+Vector3.new(x,ho,y)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp
+                toy.BG.CFrame=CFrame.new(tp)*CFrame.Angles(-math.rad(90),0,0)
+            end
+        end
+    end)
+end
+
+local function stopHeartLoop2()
+    if HeartLoopConn2 then HeartLoopConn2:Disconnect();HeartLoopConn2=nil end
+    for _,pt in ipairs(HeartPoints2) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    HeartPoints2={}; HeartAssignedToys2={}
+end
+
+toggleHeart2 = function(state)
+    HeartConfig2.Enabled=state
+    if state then
+        stopAllAnimations(); HeartConfig2.Enabled=true
+        HeartToys2=findObjects()
+        HeartPoints2={}
+        for i=1,math.min(#HeartToys2,HeartConfig2.ObjectCount) do
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            HeartPoints2[i]={angle=(i-1)*(2*math.pi/HeartConfig2.ObjectCount),part=p,assignedToy=nil}
+        end
+        HeartAssignedToys2={}
+        for i=1,math.min(#HeartToys2,#HeartPoints2) do
+            local toy=HeartToys2[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy)
+                    local BG,BP=attachPhysics(pp)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,baseAngle=HeartPoints2[i].angle}
+                    HeartPoints2[i].assignedToy=t; table.insert(HeartAssignedToys2,t)
+                end
+            end
+        end
+        startHeartLoop2()
+        OrionLib:MakeNotification({Name="♡ハート開始",Content="数:"..HeartConfig2.ObjectCount,Time=3})
+    else
+        stopHeartLoop2()
+        OrionLib:MakeNotification({Name="♡ハート停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- おっきぃ♡ 関数
+-- ====================================================================
+local function startBigHeartLoop()
+    if BigHeartLoopConn then BigHeartLoopConn:Disconnect();BigHeartLoopConn=nil end
+    BigHeartTime=0
+    BigHeartLoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not BigHeartConfig.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        BigHeartTime=BigHeartTime+dt
+        local base=torso.Position
+        local pulse=(BigHeartConfig.PulseSpeed>0) and math.sin(BigHeartTime*BigHeartConfig.PulseSpeed)*BigHeartConfig.PulseAmplitude or 0
+        for _,pt in ipairs(BigHeartPoints) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local ca=toy.baseAngle+(BigHeartTime*BigHeartConfig.RotationSpeed)
+                local sc=BigHeartConfig.Size/20*BigHeartConfig.HeartScale
+                local x=16*(math.sin(ca)^3)*sc
+                local y=(13*math.cos(ca)-5*math.cos(2*ca)-2*math.cos(3*ca)-math.cos(ca*4))*sc*BigHeartConfig.VerticalStretch
+                if pulse~=0 then local f=1+pulse*0.1; x=x*f; y=y*f end
+                local ho=BigHeartConfig.Height+(math.sin(ca*2)*1.0)
+                local tp=base+Vector3.new(x,ho,y)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp
+                toy.BG.CFrame=CFrame.new(tp)*CFrame.Angles(-math.rad(90),0,0)
+            end
+        end
+    end)
+end
+
+local function stopBigHeartLoop()
+    if BigHeartLoopConn then BigHeartLoopConn:Disconnect();BigHeartLoopConn=nil end
+    for _,pt in ipairs(BigHeartPoints) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    BigHeartPoints={}; BigHeartAssignedToys={}
+end
+
+toggleBigHeart = function(state)
+    BigHeartConfig.Enabled=state
+    if state then
+        stopAllAnimations(); BigHeartConfig.Enabled=true
+        BigHeartToys=findObjects()
+        BigHeartPoints={}
+        for i=1,math.min(#BigHeartToys,BigHeartConfig.ObjectCount) do
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            BigHeartPoints[i]={angle=(i-1)*(2*math.pi/BigHeartConfig.ObjectCount),part=p,assignedToy=nil}
+        end
+        BigHeartAssignedToys={}
+        for i=1,math.min(#BigHeartToys,#BigHeartPoints) do
+            local toy=BigHeartToys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy)
+                    local BG,BP=attachPhysics(pp)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,baseAngle=BigHeartPoints[i].angle}
+                    BigHeartPoints[i].assignedToy=t; table.insert(BigHeartAssignedToys,t)
+                end
+            end
+        end
+        startBigHeartLoop()
+        OrionLib:MakeNotification({Name="おっきぃ♡開始",Content=BigHeartConfig.Size.."×"..BigHeartConfig.HeartScale,Time=3})
+    else
+        stopBigHeartLoop()
+        OrionLib:MakeNotification({Name="おっきぃ♡停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- ダビデの星 関数
+-- ====================================================================
+local function startStarOfDavidLoop()
+    if StarOfDavidLoopConn then StarOfDavidLoopConn:Disconnect();StarOfDavidLoopConn=nil end
+    StarOfDavidTime=0
+    StarOfDavidLoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not StarOfDavidConfig.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        StarOfDavidTime=StarOfDavidTime+dt
+        local base=torso.Position
+        for i,pt in ipairs(StarOfDavidPoints) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local ca=toy.baseAngle+(StarOfDavidTime*StarOfDavidConfig.RotationSpeed)
+                local sc=StarOfDavidConfig.Size/10
+                local bx=math.cos(ca)*sc; local bz=math.sin(ca)*sc
+                local ho=(i%2==0) and StarOfDavidConfig.TriangleHeight or -StarOfDavidConfig.TriangleHeight
+                local pulse=math.sin(StarOfDavidTime*StarOfDavidConfig.PulseSpeed)*0.1
+                local fh=StarOfDavidConfig.Height+ho+pulse
+                local tp=base+Vector3.new(bx,fh,bz)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp
+                local dir=(tp-base).Unit
+                if dir.Magnitude>0 then toy.BG.CFrame=CFrame.lookAt(tp,tp+dir) end
+            end
+        end
+    end)
+end
+
+local function stopStarOfDavidLoop()
+    if StarOfDavidLoopConn then StarOfDavidLoopConn:Disconnect();StarOfDavidLoopConn=nil end
+    for _,pt in ipairs(StarOfDavidPoints) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    StarOfDavidPoints={}; StarOfDavidAssignedToys={}
+end
+
+toggleStarOfDavid = function(state)
+    StarOfDavidConfig.Enabled=state
+    if state then
+        stopAllAnimations(); StarOfDavidConfig.Enabled=true
+        StarOfDavidToys=findObjects()
+        StarOfDavidPoints={}
+        for i=1,math.min(#StarOfDavidToys,StarOfDavidConfig.ObjectCount) do
+            local angle=(i-1)*(2*math.pi/6)
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            StarOfDavidPoints[i]={angle=angle,part=p,assignedToy=nil}
+        end
+        StarOfDavidAssignedToys={}
+        for i=1,math.min(#StarOfDavidToys,#StarOfDavidPoints) do
+            local toy=StarOfDavidToys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy)
+                    local BG,BP=attachPhysics(pp)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,baseAngle=StarOfDavidPoints[i].angle}
+                    StarOfDavidPoints[i].assignedToy=t; table.insert(StarOfDavidAssignedToys,t)
+                end
+            end
+        end
+        startStarOfDavidLoop()
+        OrionLib:MakeNotification({Name="ダビデの星開始",Content="サイズ:"..StarOfDavidConfig.Size,Time=3})
+    else
+        stopStarOfDavidLoop()
+        OrionLib:MakeNotification({Name="ダビデの星停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- スター★ 関数
+-- ====================================================================
+local function startStarLoop()
+    if StarLoopConn then StarLoopConn:Disconnect();StarLoopConn=nil end
+    StarTime=0
+    StarLoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not StarConfig.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        StarTime=StarTime+dt
+        local base=torso.Position
+        for _,pt in ipairs(StarPoints2) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local si=toy.starIndex; local isOuter=toy.isOuter
+                local ape=2*math.pi/5
+                local pa=si*(ape/2)
+                local radius=(isOuter and StarConfig.OuterRadius) or StarConfig.InnerRadius
+                local ra=pa+(StarTime*StarConfig.RotationSpeed)
+                local twinkle=math.sin(StarTime*StarConfig.TwinkleSpeed+si)*0.2
+                local fr=radius*(1+twinkle)
+                local x=math.cos(ra)*fr; local z=math.sin(ra)*fr
+                local hv=math.sin(pa*3)*0.5
+                local tp=base+Vector3.new(x,StarConfig.Height+hv,z)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp
+                local dir=(tp-base).Unit
+                if dir.Magnitude>0 then toy.BG.CFrame=CFrame.lookAt(tp,tp+dir) end
+            end
+        end
+    end)
+end
+
+local function stopStarLoop()
+    if StarLoopConn then StarLoopConn:Disconnect();StarLoopConn=nil end
+    for _,pt in ipairs(StarPoints2) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    StarPoints2={}; StarAssignedToys={}
+end
+
+toggleStar = function(state)
+    StarConfig.Enabled=state
+    if state then
+        stopAllAnimations(); StarConfig.Enabled=true
+        StarToys=findObjects(); StarPoints2={}; StarAssignedToys={}
+        for i=1,math.min(#StarToys,StarConfig.ObjectCount) do
+            local si=(i-1)%10; local isO=si%2==0
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            StarPoints2[i]={starIndex=si,isOuter=isO,part=p,assignedToy=nil}
+        end
+        for i=1,math.min(#StarToys,#StarPoints2) do
+            local toy=StarToys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy)
+                    local BG,BP=attachPhysics(pp)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,starIndex=StarPoints2[i].starIndex,isOuter=StarPoints2[i].isOuter}
+                    StarPoints2[i].assignedToy=t; table.insert(StarAssignedToys,t)
+                end
+            end
+        end
+        startStarLoop()
+        OrionLib:MakeNotification({Name="スター★開始",Content="外径:"..StarConfig.OuterRadius,Time=3})
+    else
+        stopStarLoop()
+        OrionLib:MakeNotification({Name="スター★停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- スター2✫ 関数
+-- ====================================================================
+local function startStar2Loop()
+    if Star2LoopConn then Star2LoopConn:Disconnect();Star2LoopConn=nil end
+    Star2Time=0
+    Star2LoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not Star2Config.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        Star2Time=Star2Time+dt
+        local base=torso.Position
+        local pulse=(Star2Config.PulseSpeed>0) and math.sin(Star2Time*Star2Config.PulseSpeed)*Star2Config.PulseAmplitude or 0
+        for _,pt in ipairs(Star2Points) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local ca=toy.baseAngle+(Star2Time*Star2Config.RotationSpeed)
+                local sc=Star2Config.Size/10
+                local ape=2*math.pi/Star2Config.RayCount
+                local ra=toy.rayIndex*ape
+                local ad=math.abs(ca-ra); if ad>math.pi then ad=2*math.pi-ad end
+                local rf=0
+                if ad<(ape/4) then
+                    rf=(1-(ad/(ape/4)))*Star2Config.RayLength
+                    rf=rf*(1+math.sin(Star2Time*Star2Config.JitterSpeed+toy.rayIndex)*Star2Config.JitterAmount*0.1)
+                end
+                local pf=1+pulse*0.1
+                local fr=math.min((sc+rf)*pf,Star2Config.MaxDistance)
+                local x=math.cos(ca)*fr; local z=math.sin(ca)*fr
+                local hv=math.sin(Star2Time*3+toy.rayIndex)*0.5
+                local tp=base+Vector3.new(x,Star2Config.Height+hv,z)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp
+                local dir=(tp-base).Unit
+                if dir.Magnitude>0 then toy.BG.CFrame=toy.BG.CFrame:Lerp(CFrame.lookAt(tp,tp+dir),0.5) end
+            end
+        end
+    end)
+end
+
+local function stopStar2Loop()
+    if Star2LoopConn then Star2LoopConn:Disconnect();Star2LoopConn=nil end
+    for _,pt in ipairs(Star2Points) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    Star2Points={}; Star2AssignedToys={}
+end
+
+toggleStar2 = function(state)
+    Star2Config.Enabled=state
+    if state then
+        stopAllAnimations(); Star2Config.Enabled=true
+        Star2Toys=findObjects(); Star2Points={}; Star2AssignedToys={}
+        for i=1,math.min(#Star2Toys,Star2Config.ObjectCount) do
+            local t=(i-1)*(2*math.pi/Star2Config.ObjectCount)
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            Star2Points[i]={angle=t,part=p,assignedToy=nil,rayIndex=(i-1)%Star2Config.RayCount}
+        end
+        for i=1,math.min(#Star2Toys,#Star2Points) do
+            local toy=Star2Toys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy)
+                    local BG,BP=attachPhysics(pp,20000,300)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,baseAngle=Star2Points[i].angle,rayIndex=Star2Points[i].rayIndex}
+                    Star2Points[i].assignedToy=t; table.insert(Star2AssignedToys,t)
+                end
+            end
+        end
+        startStar2Loop()
+        OrionLib:MakeNotification({Name="スター2✫開始",Content="サイズ:"..Star2Config.Size,Time=3})
+    else
+        stopStar2Loop()
+        OrionLib:MakeNotification({Name="スター2✫停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- 球体◯ 関数
+-- ====================================================================
+local function startSphereLoop()
+    if SphereLoopConn then SphereLoopConn:Disconnect();SphereLoopConn=nil end
+    SphereTime=0
+    SphereLoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not SphereConfig.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        SphereTime=SphereTime+dt
+        local base=torso.Position
+        for _,pt in ipairs(SpherePoints) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local lats=SphereConfig.Latitudes; local lons=SphereConfig.Longitudes
+                local la=((toy.latIndex-1)/(lats-1)-0.5)*math.pi
+                local lo=((toy.lonIndex-1)/lons)*2*math.pi
+                local rlo=lo+(SphereTime*SphereConfig.HorizontalRotationSpeed)
+                local rla=la+(SphereTime*SphereConfig.VerticalRotationSpeed*0.5)
+                local pulse=(SphereConfig.PulseSpeed>0) and 1+math.sin(SphereTime*SphereConfig.PulseSpeed)*SphereConfig.PulseAmplitude or 1
+                local wave=(SphereConfig.WaveSpeed>0) and 1+math.sin(SphereTime*SphereConfig.WaveSpeed+toy.lonIndex*0.5)*SphereConfig.WaveAmplitude or 1
+                local fr=SphereConfig.Radius*pulse*wave
+                local x=fr*math.cos(rla)*math.cos(rlo)
+                local y=fr*math.sin(rla)
+                local z=fr*math.cos(rla)*math.sin(rlo)
+                local tp=base+Vector3.new(x,SphereConfig.BaseHeight+y,z)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp
+                local dir=(tp-base).Unit
+                if dir.Magnitude>0 then toy.BG.CFrame=toy.BG.CFrame:Lerp(CFrame.lookAt(tp,tp+dir),0.4) end
+            end
+        end
+    end)
+end
+
+local function stopSphereLoop()
+    if SphereLoopConn then SphereLoopConn:Disconnect();SphereLoopConn=nil end
+    for _,pt in ipairs(SpherePoints) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    SpherePoints={}; SphereAssignedToys={}
+end
+
+toggleSphere = function(state)
+    SphereConfig.Enabled=state
+    if state then
+        stopAllAnimations(); SphereConfig.Enabled=true
+        SphereToys=findObjects(); SpherePoints={}; SphereAssignedToys={}
+        for i=1,math.min(#SphereToys,SphereConfig.ObjectCount) do
+            local li=math.floor((i-1)/SphereConfig.Longitudes)+1
+            local ni=((i-1)%SphereConfig.Longitudes)+1
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            SpherePoints[i]={latIndex=li,lonIndex=ni,part=p,assignedToy=nil}
+        end
+        for i=1,math.min(#SphereToys,#SpherePoints) do
+            local toy=SphereToys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy)
+                    local BG,BP=attachPhysics(pp,20000,300)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,latIndex=SpherePoints[i].latIndex,lonIndex=SpherePoints[i].lonIndex}
+                    SpherePoints[i].assignedToy=t; table.insert(SphereAssignedToys,t)
+                end
+            end
+        end
+        startSphereLoop()
+        OrionLib:MakeNotification({Name="球体◯開始",Content="半径:"..SphereConfig.Radius,Time=3})
+    else
+        stopSphereLoop()
+        OrionLib:MakeNotification({Name="球体◯停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- 観覧車 関数
+-- ====================================================================
+local function startFerrisWheelLoop()
+    if FerrisWheelLoopConn then FerrisWheelLoopConn:Disconnect();FerrisWheelLoopConn=nil end
+    FerrisWheelTime=0
+    local fixedCF=nil
+    if FerrisWheelConfig.FixedDirection then
+        fixedCF=CFrame.Angles(math.rad(FerrisWheelConfig.FixedPitch),math.rad(FerrisWheelConfig.FixedYaw),math.rad(FerrisWheelConfig.FixedRoll))
+    end
+    FerrisWheelLoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not FerrisWheelConfig.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        FerrisWheelTime=FerrisWheelTime+dt
+        local base=torso.Position
+        for _,pt in ipairs(FerrisWheelPoints) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local ca=(toy.baseAngle+(FerrisWheelTime*FerrisWheelConfig.RotationSpeed))%(2*math.pi)
+                local cr=FerrisWheelConfig.Radius
+                if FerrisWheelConfig.PulseEffect then
+                    cr=cr*(1+math.sin(FerrisWheelTime*FerrisWheelConfig.PulseSpeed)*(FerrisWheelConfig.PulseAmplitude/cr))
+                end
+                local sw=(FerrisWheelConfig.SwingEffect and math.sin(FerrisWheelTime*2+toy.baseAngle)*FerrisWheelConfig.SwingAmount) or 0
+                local x,y,z
+                if FerrisWheelConfig.VerticalCircle then
+                    x=math.cos(ca)*cr; y=math.sin(ca)*cr+FerrisWheelConfig.Height+sw; z=0
+                else
+                    x=math.cos(ca)*cr; y=FerrisWheelConfig.Height+math.sin(ca*2)*(cr*0.2); z=math.sin(ca)*cr
+                end
+                local tp=base+Vector3.new(x,y,z)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp
+                if FerrisWheelConfig.FixedDirection and fixedCF then
+                    toy.BG.CFrame=CFrame.new(tp)*fixedCF
+                else
+                    toy.BG.CFrame=CFrame.lookAt(tp,base)
+                end
+            end
+        end
+    end)
+end
+
+local function stopFerrisWheelLoop()
+    if FerrisWheelLoopConn then FerrisWheelLoopConn:Disconnect();FerrisWheelLoopConn=nil end
+    for _,pt in ipairs(FerrisWheelPoints) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    FerrisWheelPoints={}; FerrisWheelAssignedToys={}
+end
+
+toggleFerrisWheel = function(state)
+    FerrisWheelConfig.Enabled=state
+    if state then
+        stopAllAnimations(); FerrisWheelConfig.Enabled=true
+        FerrisWheelToys=findObjects(); FerrisWheelPoints={}; FerrisWheelAssignedToys={}
+        local as=(2*math.pi)/FerrisWheelConfig.ObjectCount
+        for i=1,math.min(#FerrisWheelToys,FerrisWheelConfig.ObjectCount) do
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            FerrisWheelPoints[i]={baseAngle=(i-1)*as,part=p,assignedToy=nil}
+        end
+        for i=1,math.min(#FerrisWheelToys,#FerrisWheelPoints) do
+            local toy=FerrisWheelToys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy)
+                    local BG,BP=attachPhysics(pp,20000,300)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,baseAngle=FerrisWheelPoints[i].baseAngle}
+                    FerrisWheelPoints[i].assignedToy=t; table.insert(FerrisWheelAssignedToys,t)
+                end
+            end
+        end
+        startFerrisWheelLoop()
+        OrionLib:MakeNotification({Name="観覧車開始",Content="半径:"..FerrisWheelConfig.Radius,Time=3})
+    else
+        stopFerrisWheelLoop()
+        OrionLib:MakeNotification({Name="観覧車停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- アニメーションN1 (カオス・サークル)
+-- ====================================================================
+local function startAnimN1Loop()
+    if AnimN1LoopConn then AnimN1LoopConn:Disconnect();AnimN1LoopConn=nil end
+    AnimN1Time=0
+    AnimN1LoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not AnimN1Config.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        AnimN1Time=AnimN1Time+dt
+        local base=torso.Position
+        for i,pt in ipairs(AnimN1Points) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local ra=toy.baseAngle+(AnimN1Time*AnimN1Config.RotationSpeed)
+                local pulse=math.sin(AnimN1Time*AnimN1Config.PulseSpeed)*AnimN1Config.PulseAmount
+                local cr=AnimN1Config.Radius+pulse
+                local ch=AnimN1Config.Height+math.sin(AnimN1Time*3+i)*5
+                local cx=math.sin(AnimN1Time*2+i)*2; local cy=math.cos(AnimN1Time*2.5+i)*2; local cz=math.sin(AnimN1Time*3+i)*2
+                local x=math.cos(ra)*cr+cx; local z=math.sin(ra)*cr+cz; local y=ch+cy
+                local tp=base+Vector3.new(x,y,z)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp; toy.BG.CFrame=CFrame.new(tp)
+            end
+        end
+    end)
+end
+
+local function stopAnimN1Loop()
+    if AnimN1LoopConn then AnimN1LoopConn:Disconnect();AnimN1LoopConn=nil end
+    for _,pt in ipairs(AnimN1Points) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    AnimN1Points={}; AnimN1AssignedToys={}
+end
+
+toggleAnimN1 = function(state)
+    AnimN1Config.Enabled=state
+    if state then
+        stopAllAnimations(); AnimN1Config.Enabled=true
+        AnimN1Toys=findObjects(); AnimN1Points={}; AnimN1AssignedToys={}
+        for i=1,math.min(#AnimN1Toys,AnimN1Config.ObjectCount) do
+            local a=(i-1)*(2*math.pi/AnimN1Config.ObjectCount)
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            AnimN1Points[i]={baseAngle=a,part=p,assignedToy=nil}
+        end
+        for i=1,math.min(#AnimN1Toys,#AnimN1Points) do
+            local toy=AnimN1Toys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy); pp.Material=Enum.Material.Neon
+                    local BG,BP=attachPhysics(pp,30000,500)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,baseAngle=AnimN1Points[i].baseAngle}
+                    AnimN1Points[i].assignedToy=t; table.insert(AnimN1AssignedToys,t)
+                end
+            end
+        end
+        startAnimN1Loop()
+        OrionLib:MakeNotification({Name="N1開始",Content="数:"..#AnimN1AssignedToys,Time=3})
+    else
+        stopAnimN1Loop()
+        OrionLib:MakeNotification({Name="N1停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- アニメーションN2 (トルネード・スパイラル)
+-- ====================================================================
+local function startAnimN2Loop()
+    if AnimN2LoopConn then AnimN2LoopConn:Disconnect();AnimN2LoopConn=nil end
+    AnimN2Time=0
+    AnimN2LoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not AnimN2Config.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        AnimN2Time=AnimN2Time+dt
+        local base=torso.Position
+        for i,pt in ipairs(AnimN2Points) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local ra=toy.baseAngle+(AnimN2Time*AnimN2Config.RotationSpeed)
+                local rise=(AnimN2Time*AnimN2Config.RiseSpeed)%(AnimN2Config.TopHeight-AnimN2Config.BaseHeight)
+                local ch=AnimN2Config.BaseHeight+rise
+                local chaos=math.sin(AnimN2Time*AnimN2Config.ChaosFactor+i)*2
+                local cr=AnimN2Config.Radius+chaos
+                local x=math.cos(ra)*cr+math.sin(AnimN2Time*5+i)*1.5
+                local z=math.sin(ra)*cr+math.cos(AnimN2Time*5+i)*1.5
+                local tp=base+Vector3.new(x,ch,z)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp; toy.BG.CFrame=CFrame.new(tp)
+            end
+        end
+    end)
+end
+
+local function stopAnimN2Loop()
+    if AnimN2LoopConn then AnimN2LoopConn:Disconnect();AnimN2LoopConn=nil end
+    for _,pt in ipairs(AnimN2Points) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    AnimN2Points={}; AnimN2AssignedToys={}
+end
+
+toggleAnimN2 = function(state)
+    AnimN2Config.Enabled=state
+    if state then
+        stopAllAnimations(); AnimN2Config.Enabled=true
+        AnimN2Toys=findObjects(); AnimN2Points={}; AnimN2AssignedToys={}
+        for i=1,math.min(#AnimN2Toys,AnimN2Config.ObjectCount) do
+            local a=(i-1)*(2*math.pi/AnimN2Config.ObjectCount)
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            AnimN2Points[i]={baseAngle=a,part=p,assignedToy=nil,riseOffset=i/AnimN2Config.ObjectCount}
+        end
+        for i=1,math.min(#AnimN2Toys,#AnimN2Points) do
+            local toy=AnimN2Toys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy); pp.Material=Enum.Material.Neon
+                    local BG,BP=attachPhysics(pp,25000,400)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,baseAngle=AnimN2Points[i].baseAngle,riseOffset=AnimN2Points[i].riseOffset}
+                    AnimN2Points[i].assignedToy=t; table.insert(AnimN2AssignedToys,t)
+                end
+            end
+        end
+        startAnimN2Loop()
+        OrionLib:MakeNotification({Name="N2開始",Content="数:"..#AnimN2AssignedToys,Time=3})
+    else
+        stopAnimN2Loop()
+        OrionLib:MakeNotification({Name="N2停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- アニメーションN3 (ハイパー・エクスプロージョン)
+-- ====================================================================
+local function startAnimN3Loop()
+    if AnimN3LoopConn then AnimN3LoopConn:Disconnect();AnimN3LoopConn=nil end
+    AnimN3Time=0
+    AnimN3LoopConn=RunService.RenderStepped:Connect(function(dt)
+        if not AnimN3Config.Enabled or not LocalPlayer.Character then return end
+        local torso=LocalPlayer.Character:FindFirstChild("Torso") or LocalPlayer.Character:FindFirstChild("UpperTorso")
+        if not torso then return end
+        AnimN3Time=AnimN3Time+dt
+        local base=torso.Position
+        local cycle=math.sin(AnimN3Time*AnimN3Config.CycleSpeed)
+        local ef=(cycle+1)/2
+        for i,pt in ipairs(AnimN3Points) do
+            if pt.assignedToy and pt.assignedToy.BP and pt.assignedToy.BG then
+                local toy=pt.assignedToy
+                local dir=Vector3.new(
+                    math.sin(AnimN3Time*2+toy.seed),
+                    math.cos(AnimN3Time*3+toy.seed),
+                    math.sin(AnimN3Time*4+toy.seed)).Unit
+                local dist=ef*AnimN3Config.ExplosionRadius+math.sin(AnimN3Time*5+toy.seed)*AnimN3Config.Randomness
+                local ho=math.sin(AnimN3Time*3+toy.seed)*5+AnimN3Config.Height
+                local lp=dir*dist
+                local tp=base+Vector3.new(lp.X,ho,lp.Z)
+                if pt.part then pt.part.Position=tp end
+                toy.BP.Position=tp; toy.BG.CFrame=CFrame.new(tp)
+            end
+        end
+    end)
+end
+
+local function stopAnimN3Loop()
+    if AnimN3LoopConn then AnimN3LoopConn:Disconnect();AnimN3LoopConn=nil end
+    for _,pt in ipairs(AnimN3Points) do
+        if pt.part then pt.part:Destroy() end
+        if pt.assignedToy then
+            if pt.assignedToy.BG then pt.assignedToy.BG:Destroy() end
+            if pt.assignedToy.BP then pt.assignedToy.BP:Destroy() end
+        end
+    end
+    AnimN3Points={}; AnimN3AssignedToys={}
+end
+
+toggleAnimN3 = function(state)
+    AnimN3Config.Enabled=state
+    if state then
+        stopAllAnimations(); AnimN3Config.Enabled=true
+        AnimN3Toys=findObjects(); AnimN3Points={}; AnimN3AssignedToys={}
+        for i=1,math.min(#AnimN3Toys,AnimN3Config.ObjectCount) do
+            local p=Instance.new("Part"); p.CanCollide=false; p.Anchored=true
+            p.Transparency=1; p.Size=Vector3.new(4,1,4); p.Parent=workspace
+            AnimN3Points[i]={part=p,assignedToy=nil,seed=i}
+        end
+        for i=1,math.min(#AnimN3Toys,#AnimN3Points) do
+            local toy=AnimN3Toys[i]
+            if toy and toy:IsA("Model") and toy.Name==ObjectIDConfig.CurrentObjectID then
+                local pp=getPrimaryPart(toy)
+                if pp then
+                    disableCollisionAll(toy); pp.Material=Enum.Material.Neon
+                    local BG,BP=attachPhysics(pp,20000,300)
+                    local t={BG=BG,BP=BP,Pallet=pp,Model=toy,seed=i}
+                    AnimN3Points[i].assignedToy=t; table.insert(AnimN3AssignedToys,t)
+                end
+            end
+        end
+        startAnimN3Loop()
+        OrionLib:MakeNotification({Name="N3開始",Content="数:"..#AnimN3AssignedToys,Time=3})
+    else
+        stopAnimN3Loop()
+        OrionLib:MakeNotification({Name="N3停止",Content="解除",Time=2})
+    end
+end
+
+-- ====================================================================
+-- TPWalk / シンプルESP
+-- ====================================================================
+local function enableTPWalk2()
+    if TPWalkConnection2 then TPWalkConnection2:Disconnect();TPWalkConnection2=nil end
+    local char=LocalPlayer.Character
+    if char then
+        local hum=char:FindFirstChildOfClass("Humanoid")
+        if hum then OriginalWalkSpeed2=hum.WalkSpeed end
+    end
+    TPWalkConnection2=RunService.RenderStepped:Connect(function()
+        if not UtilityConfig.TPWalk or not LocalPlayer.Character then return end
+        local hum=LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        local hrp=LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hum and hrp then
+            local md=hum.MoveDirection
+            if md.Magnitude>0 then
+                hrp.AssemblyLinearVelocity=Vector3.new(md.X*UtilityConfig.TPWalkSpeed,hrp.AssemblyLinearVelocity.Y,md.Z*UtilityConfig.TPWalkSpeed)
+            else
+                local mv=Vector3.new(0,hrp.AssemblyLinearVelocity.Y,0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then mv=mv+hrp.CFrame.LookVector*UtilityConfig.TPWalkSpeed end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then mv=mv-hrp.CFrame.LookVector*UtilityConfig.TPWalkSpeed end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then mv=mv-hrp.CFrame.RightVector*UtilityConfig.TPWalkSpeed end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then mv=mv+hrp.CFrame.RightVector*UtilityConfig.TPWalkSpeed end
+                hrp.AssemblyLinearVelocity=mv
+            end
+        end
+    end)
+end
+
+local function disableTPWalk2()
+    if TPWalkConnection2 then TPWalkConnection2:Disconnect();TPWalkConnection2=nil end
+    local char=LocalPlayer.Character
+    if char then
+        local hum=char:FindFirstChildOfClass("Humanoid")
+        if hum then hum.WalkSpeed=OriginalWalkSpeed2 end
+    end
+end
+
+local function enableSimpleESP()
+    if SimpleESPConnection then SimpleESPConnection:Disconnect();SimpleESPConnection=nil end
+    for _,l in pairs(SimpleESPLabels) do if l then l:Destroy() end end
+    SimpleESPLabels={}
+    SimpleESPConnection=RunService.RenderStepped:Connect(function()
+        if not UtilityConfig.SimpleESP then return end
+        for _,plr in ipairs(Players:GetPlayers()) do
+            if plr~=LocalPlayer and plr.Character then
+                local hrp=plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if not SimpleESPLabels[plr] then
+                        local bg=Instance.new("BillboardGui"); bg.Name="SESP_"..plr.Name
+                        bg.Adornee=hrp; bg.AlwaysOnTop=true
+                        bg.Size=UDim2.new(0,200,0,50); bg.StudsOffset=Vector3.new(0,3,0)
+                        local tl=Instance.new("TextLabel"); tl.Size=UDim2.new(1,0,1,0)
+                        tl.BackgroundTransparency=1; tl.TextColor3=Color3.fromRGB(255,105,180)
+                        tl.TextStrokeTransparency=0; tl.TextStrokeColor3=Color3.new(0,0,0)
+                        tl.Font=Enum.Font.SourceSansBold; tl.TextSize=20; tl.Parent=bg
+                        bg.Parent=hrp; SimpleESPLabels[plr]=bg
+                    end
+                    local dist=LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and
+                        (hrp.Position-LocalPlayer.Character.HumanoidRootPart.Position).Magnitude or 0
+                    local lbl=SimpleESPLabels[plr]
+                    if lbl then
+                        local tl=lbl:FindFirstChildOfClass("TextLabel")
+                        if tl then tl.Text=string.format("%s\n[%.0fm]",plr.DisplayName,dist) end
+                    end
+                end
+            end
+        end
+        for plr,lbl in pairs(SimpleESPLabels) do
+            if not Players:FindFirstChild(plr.Name) then lbl:Destroy(); SimpleESPLabels[plr]=nil end
+        end
+    end)
+end
+
+local function disableSimpleESP()
+    if SimpleESPConnection then SimpleESPConnection:Disconnect();SimpleESPConnection=nil end
+    for _,l in pairs(SimpleESPLabels) do if l then l:Destroy() end end
+    SimpleESPLabels={}
+end
+
+local function executeScript(url, scriptName)
+    local ok,res=pcall(function() return loadstring(game:HttpGet(url))() end)
+    OrionLib:MakeNotification({Name=scriptName,Content=ok and "読み込み成功！" or "失敗: "..tostring(res),Time=ok and 3 or 5})
+end
+
+local function copyToClipboard(text, name)
+    setclipboard(text)
+    OrionLib:MakeNotification({Name=name,Content="クリップボードにコピーしました",Time=2})
+end
+
 local Window = OrionLib:MakeWindow({
     Name = "Tsukuyomihub やおよろー！",
     SaveConfig = true,
@@ -1525,6 +2860,304 @@ local BlobmanTab = Window:MakeTab({Name = "ブロブマン", Icon =  "rbxassetid
 local AntiTab = Window:MakeTab({Name = "防衛", Icon =  "rbxassetid://10734951847", PremiumOnly = false})
 local PlayerTab = Window:MakeTab({Name = "ローカルプレイヤー", Icon =  "rbxassetid://11632434473", PremiumOnly = false})
 local ESPTab = Window:MakeTab({Name = "ESP", Icon =  "rbxassetid://7733774602", PremiumOnly = false})
+
+ESPTab:AddToggle({
+    Name = "シンプルESP",
+    Default = false,
+    Callback = function(v)
+        UtilityConfig.SimpleESP = v
+        if v then enableSimpleESP() else disableSimpleESP() end
+    end
+})
+
+ESPTab:AddSlider({
+    Name = "視野角 (FOV)",
+    Min = -5, Max = 180, Default = 70, Increment = 1,
+    Callback = function(v)
+        UtilityConfig.FOV2 = v
+        Camera.FieldOfView = v
+    end
+})
+
+ESPTab:AddButton({
+    Name = "FOVリセット",
+    Callback = function()
+        Camera.FieldOfView = UtilityConfig.OriginalFOV2
+        UtilityConfig.FOV2 = UtilityConfig.OriginalFOV2
+    end
+})
+
+ESPTab:AddSection({Name = "Hokuto Hub ESP"})
+
+ESPTab:AddButton({
+    Name = "Hokuto Hub 起動 (RShift でGUI表示)",
+    Callback = function()
+        task.spawn(function()
+            local _hPlayers = game:GetService("Players")
+            local _hRun = game:GetService("RunService")
+            local _hUIS = game:GetService("UserInputService")
+            local _hWS = game:GetService("Workspace")
+            local _hLP = _hPlayers.LocalPlayer
+            local _hCam = _hWS.CurrentCamera
+            local _hSettings = {
+                toggleKey = Enum.KeyCode.RightShift,
+                guiColor = Color3.fromRGB(255,105,180),
+                textColor = Color3.fromRGB(255,255,255),
+                backgroundColor = Color3.fromRGB(20,20,20),
+                lineColor = Color3.fromRGB(255,165,0),
+                transparency = 0.1
+            }
+            local _hAllGUI = false
+            local _hESPOn = false
+            local _hAimbotOn = false
+            local _hAimrookOn = false
+            local _hSelectedTarget = nil
+            local _hAutoTarget = nil
+            local _hTrackMode = "CAMERA"
+            local _hESPLabels = {}
+            local _hLines = {}
+            local _hDrawings = {}
+            local _hContainer = nil
+            local _hESPFrame = nil
+            local _hSystemFrame = nil
+            local _hLogFrame = nil
+            local _hGuiConns = {}
+            local _hLastAimTime = 0
+            local _hAimCD = 0.016
+
+            local function _hNewDrawing(t)
+                local d = Drawing.new(t)
+                table.insert(_hDrawings, d)
+                return d
+            end
+            local function _hClearDrawings()
+                for _,d in ipairs(_hDrawings) do pcall(function() d:Remove() end) end
+                _hDrawings = {}
+            end
+            local function _hMakeDrag(frame, bar)
+                _hGuiConns[frame] = _hGuiConns[frame] or {}
+                local drag, ds, sp = false, nil, nil
+                table.insert(_hGuiConns[frame], bar.InputBegan:Connect(function(inp)
+                    if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                        drag = true; ds = inp.Position
+                        sp = Vector2.new(frame.Position.X.Offset, frame.Position.Y.Offset)
+                        table.insert(_hGuiConns[frame], inp.Changed:Connect(function()
+                            if inp.UserInputState == Enum.UserInputState.End then drag = false end
+                        end))
+                    end
+                end))
+                table.insert(_hGuiConns[frame], _hUIS.InputChanged:Connect(function(inp)
+                    if drag and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+                        local delta = inp.Position - ds
+                        local nx = math.clamp(sp.X+delta.X, 0, _hCam.ViewportSize.X-frame.AbsoluteSize.X)
+                        local ny = math.clamp(sp.Y+delta.Y, 0, _hCam.ViewportSize.Y-frame.AbsoluteSize.Y)
+                        frame.Position = UDim2.new(0,nx,0,ny)
+                    end
+                end))
+            end
+            local function _hMakeFrame(w,h,x,y,title)
+                local f = Instance.new("Frame")
+                f.Size = UDim2.new(0,w,0,h); f.Position = UDim2.new(0,x,0,y)
+                f.BackgroundColor3 = _hSettings.backgroundColor
+                f.BackgroundTransparency = _hSettings.transparency
+                f.BorderSizePixel = 2; f.BorderColor3 = _hSettings.guiColor
+                f.Visible = false; f.Parent = _hContainer
+                local bar = Instance.new("TextButton")
+                bar.Text = title; bar.Size = UDim2.new(1,0,0,25)
+                bar.BackgroundColor3 = _hSettings.guiColor; bar.BackgroundTransparency = 0.2
+                bar.TextColor3 = _hSettings.textColor; bar.Font = Enum.Font.GothamBold
+                bar.TextSize = 13; bar.AutoButtonColor = false; bar.Parent = f
+                _hMakeDrag(f, bar)
+                return f, bar
+            end
+            local function _hBtn(parent, text, yPos, w, xOff)
+                local b = Instance.new("TextButton")
+                b.Text = text; b.Size = UDim2.new(w or 0.9,0,0,25)
+                b.Position = UDim2.new(xOff or 0.05,0,0,yPos)
+                b.BackgroundColor3 = _hSettings.guiColor; b.BackgroundTransparency = 0.3
+                b.TextColor3 = _hSettings.textColor; b.Font = Enum.Font.GothamBold
+                b.TextSize = 12; b.Parent = parent
+                return b
+            end
+
+            _hContainer = Instance.new("ScreenGui")
+            _hContainer.Name = "HokutoHub"; _hContainer.DisplayOrder = 1000
+            _hContainer.ResetOnSpawn = false
+            _hContainer.Parent = game:GetService("CoreGui") or _hLP:WaitForChild("PlayerGui")
+
+            local _hEF, _ = _hMakeFrame(200,220,10,10,"ESP Control")
+            local _bESP = _hBtn(_hEF,"ESP: OFF",30)
+            local _bAimbot = _hBtn(_hEF,"Aimbot: OFF",60)
+            local _bAimrook = _hBtn(_hEF,"Aimrook: OFF",90)
+            local _bTarget = _hBtn(_hEF,"Target: NONE",120)
+            local _bClear = _hBtn(_hEF,"Clear Target",150)
+            local _bTrack = _hBtn(_hEF,"Track: CAMERA",180)
+            _hESPFrame = _hEF
+
+            local _hSF, _ = _hMakeFrame(180,120,220,10,"System Info")
+            _hSystemFrame = _hSF
+
+            local function _hUpdateESP(plr)
+                if plr == _hLP or not plr.Character then return end
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+                if not hrp or not hum then
+                    local d = _hESPLabels[plr]; if d then for _,v in pairs(d) do v.Visible=false end end
+                    local l = _hLines[plr]; if l then l.Visible=false end; return
+                end
+                local pos, onScreen = _hCam:WorldToViewportPoint(hrp.Position)
+                local dist = (hrp.Position - _hCam.CFrame.Position).Magnitude
+                local sc = Vector2.new(_hCam.ViewportSize.X/2, _hCam.ViewportSize.Y/2)
+                if not _hESPLabels[plr] then
+                    local name = _hNewDrawing("Text"); name.Color=_hSettings.guiColor; name.Size=14
+                    name.Outline=true; name.OutlineColor=Color3.new(0,0,0); name.Font=Drawing.Fonts.UI
+                    local box = _hNewDrawing("Square"); box.Color=_hSettings.guiColor; box.Thickness=2; box.Filled=false
+                    local line = _hNewDrawing("Line"); line.Color=_hSettings.lineColor; line.Thickness=1
+                    _hESPLabels[plr]={name=name,box=box}; _hLines[plr]=line
+                end
+                local d = _hESPLabels[plr]; local line = _hLines[plr]
+                if line and _hESPOn then
+                    if onScreen then line.From=sc; line.To=Vector2.new(pos.X,pos.Y)
+                    else
+                        local dir=(Vector2.new(pos.X,pos.Y)-sc).Unit
+                        line.From=sc; line.To=sc+dir*500
+                    end
+                    line.Visible=true
+                elseif line then line.Visible=false end
+                if onScreen then
+                    local head=plr.Character:FindFirstChild("Head"); local torso=plr.Character:FindFirstChild("UpperTorso") or plr.Character:FindFirstChild("Torso")
+                    if head and torso then
+                        local hp=_hCam:WorldToViewportPoint(head.Position)
+                        local ph=math.abs(hp.Y-pos.Y)*2.5; local pw=ph*0.5
+                        d.box.Size=Vector2.new(pw,ph); d.box.Position=Vector2.new(pos.X-pw/2,pos.Y-ph/2); d.box.Visible=_hESPOn
+                        d.name.Position=Vector2.new(pos.X,pos.Y-ph/2-18); d.name.Text=plr.Name; d.name.Visible=_hESPOn
+                    end
+                else
+                    for _,v in pairs(d) do v.Visible=false end
+                end
+            end
+
+            local function _hAdjustCharOrientation(tpos)
+                local char = _hLP.Character; if not char then return end
+                local hrp = char:FindFirstChild("HumanoidRootPart"); if not hrp then return end
+                if _hTrackMode == "CHARACTER" then
+                    local dir = (tpos-hrp.Position).Unit
+                    hrp.CFrame = CFrame.new(hrp.Position, hrp.Position+Vector3.new(dir.X,0,dir.Z))
+                end
+            end
+
+            local function _hUpdateAimbot()
+                if not _hAimbotOn then _hAutoTarget=nil; return end
+                local cur = tick(); if cur-_hLastAimTime<_hAimCD then return end
+                local char=_hLP.Character; local root=char and char:FindFirstChild("HumanoidRootPart"); if not root then return end
+                local best,bestPart,closest=nil,nil,math.huge
+                for _,plr in pairs(_hPlayers:GetPlayers()) do
+                    if plr~=_hLP and plr.Character then
+                        local hum=plr.Character:FindFirstChildOfClass("Humanoid")
+                        if hum and hum.Health>0 then
+                            local part=plr.Character:FindFirstChild("Head") or plr.Character:FindFirstChild("HumanoidRootPart")
+                            if part then
+                                local dist=(root.Position-part.Position).Magnitude
+                                if dist<closest then closest=dist; best=plr; bestPart=part end
+                            end
+                        end
+                    end
+                end
+                if best and bestPart then
+                    _hAutoTarget=best
+                    local cf=_hCam.CFrame
+                    _hCam.CFrame=cf:Lerp(CFrame.lookAt(cf.Position,bestPart.Position),0.95)
+                    _hAdjustCharOrientation(bestPart.Position)
+                    _hLastAimTime=cur
+                end
+            end
+
+            local function _hUpdateAimrook()
+                if not _hAimrookOn or not _hSelectedTarget then return end
+                local cur=tick(); if cur-_hLastAimTime<_hAimCD then return end
+                if not _hSelectedTarget.Parent then _hSelectedTarget=nil; return end
+                local tc=_hSelectedTarget.Character; if not tc then return end
+                local tp=tc:FindFirstChild("Head") or tc:FindFirstChild("HumanoidRootPart"); if not tp then return end
+                local cf=_hCam.CFrame
+                local tgt=tp.Position
+                local dir=(tgt-cf.Position).Unit
+                _hCam.CFrame=CFrame.new(cf.Position, cf.Position+dir)
+                _hAdjustCharOrientation(tgt)
+                _hLastAimTime=cur
+            end
+
+            _bESP.MouseButton1Click:Connect(function()
+                _hESPOn=not _hESPOn; _bESP.Text="ESP: "..(_hESPOn and "ON" or "OFF")
+                _bESP.BackgroundTransparency=_hESPOn and 0.1 or 0.3
+            end)
+            _bAimbot.MouseButton1Click:Connect(function()
+                _hAimbotOn=not _hAimbotOn; _bAimbot.Text="Aimbot: "..(_hAimbotOn and "ON" or "OFF")
+                _bAimbot.BackgroundTransparency=_hAimbotOn and 0.1 or 0.3
+                if _hAimbotOn then _hAimrookOn=false; _bAimrook.Text="Aimrook: OFF"; _bAimrook.BackgroundTransparency=0.3 end
+            end)
+            _bAimrook.MouseButton1Click:Connect(function()
+                _hAimrookOn=not _hAimrookOn; _bAimrook.Text="Aimrook: "..(_hAimrookOn and "ON" or "OFF")
+                _bAimrook.BackgroundTransparency=_hAimrookOn and 0.1 or 0.3
+                if _hAimrookOn then _hAimbotOn=false; _bAimbot.Text="Aimbot: OFF"; _bAimbot.BackgroundTransparency=0.3 end
+            end)
+            _bTarget.MouseButton1Click:Connect(function()
+                local menu=Instance.new("ScreenGui"); menu.Name="HHTargetMenu"; menu.DisplayOrder=1001
+                menu.Parent=game:GetService("CoreGui") or _hLP:WaitForChild("PlayerGui")
+                local frame=Instance.new("Frame"); frame.Size=UDim2.new(0,200,0,250)
+                frame.Position=UDim2.new(0.5,-100,0.5,-125)
+                frame.BackgroundColor3=_hSettings.backgroundColor; frame.BackgroundTransparency=0.05
+                frame.BorderSizePixel=2; frame.BorderColor3=_hSettings.guiColor; frame.Parent=menu
+                local cl=Instance.new("TextButton"); cl.Text="✕ 閉じる"; cl.Size=UDim2.new(1,0,0,30)
+                cl.BackgroundColor3=_hSettings.guiColor; cl.TextColor3=_hSettings.textColor
+                cl.Font=Enum.Font.GothamBold; cl.TextSize=13; cl.Parent=frame
+                cl.MouseButton1Click:Connect(function() menu:Destroy() end)
+                local y=35
+                for _,plr in pairs(_hPlayers:GetPlayers()) do
+                    if plr~=_hLP then
+                        local pb=Instance.new("TextButton"); pb.Text=plr.Name
+                        pb.Size=UDim2.new(0.9,0,0,28); pb.Position=UDim2.new(0.05,0,0,y)
+                        pb.BackgroundColor3=Color3.fromRGB(50,50,50); pb.BackgroundTransparency=0.3
+                        pb.TextColor3=_hSettings.textColor; pb.Font=Enum.Font.Gotham; pb.TextSize=12; pb.Parent=frame
+                        pb.MouseButton1Click:Connect(function()
+                            _hSelectedTarget=plr; _bTarget.Text="Target: "..plr.Name; menu:Destroy()
+                        end)
+                        y=y+32
+                    end
+                end
+                frame.Size=UDim2.new(0,200,0,math.min(y+5,300))
+            end)
+            _bClear.MouseButton1Click:Connect(function()
+                _hSelectedTarget=nil; _bTarget.Text="Target: NONE"
+            end)
+            _bTrack.MouseButton1Click:Connect(function()
+                _hTrackMode=(_hTrackMode=="CAMERA") and "CHARACTER" or "CAMERA"
+                _bTrack.Text="Track: ".._hTrackMode
+            end)
+            _hUIS.InputBegan:Connect(function(inp, gp)
+                if gp then return end
+                if inp.KeyCode==_hSettings.toggleKey then
+                    _hAllGUI=not _hAllGUI
+                    _hEF.Visible=_hAllGUI; _hSF.Visible=_hAllGUI
+                end
+            end)
+            for _,plr in ipairs(_hPlayers:GetPlayers()) do
+                if plr~=_hLP then pcall(function() _hUpdateESP(plr) end) end
+            end
+            _hPlayers.PlayerAdded:Connect(function(plr) task.wait(1); pcall(function() _hUpdateESP(plr) end) end)
+            _hPlayers.PlayerRemoving:Connect(function(plr)
+                if _hESPLabels[plr] then for _,d in pairs(_hESPLabels[plr]) do pcall(function() d:Remove() end) end; _hESPLabels[plr]=nil end
+                if _hLines[plr] then pcall(function() _hLines[plr]:Remove() end); _hLines[plr]=nil end
+            end)
+            _hRun.RenderStepped:Connect(function()
+                for plr in pairs(_hESPLabels) do pcall(function() _hUpdateESP(plr) end) end
+                if _hAimrookOn and _hSelectedTarget then _hUpdateAimrook()
+                elseif _hAimbotOn then _hUpdateAimbot() end
+            end)
+            OrionLib:MakeNotification({Name="Hokuto Hub",Content="起動完了！RShiftでGUI表示",Time=4})
+        end)
+    end
+})
+
 local LineTab = Window:MakeTab({Name = "ライン", Icon =  "rbxassetid://7734022107", PremiumOnly = false})
 local TeleportTab = Window:MakeTab({Name = "テレポート", Icon =  "rbxassetid://7734022107", PremiumOnly = false})
 local NotifyTab = Window:MakeTab({Name = "通知", Icon = "rbxassetid://94612128913941", PremiumOnly = false})
@@ -3193,6 +4826,24 @@ PlayerTab:AddToggle({
                 root.CFrame = Config.freeze
             end
         end
+    end
+})
+
+PlayerTab:AddSection({Name = "TPWalk"})
+PlayerTab:AddToggle({
+    Name = "TPWalk",
+    Default = false,
+    Callback = function(v)
+        UtilityConfig.TPWalk = v
+        if v then enableTPWalk2() else disableTPWalk2() end
+    end
+})
+PlayerTab:AddSlider({
+    Name = "TPWalk速度",
+    Min = 16, Max = 500, Default = 50, Increment = 5,
+    Callback = function(v)
+        UtilityConfig.TPWalkSpeed = v
+        if UtilityConfig.TPWalk then disableTPWalk2(); enableTPWalk2() end
     end
 })
 
@@ -5232,4 +6883,186 @@ service.UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 Workspace.ChildAdded:Connect(GrabParts)
+
+-- ====================================================================
+-- さくらhub 統合タブ群
+-- ====================================================================
+
+-- オブジェクト設定タブ
+local ObjectIDTab = Window:MakeTab({Name = "オブジェクト設定", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+ObjectIDTab:AddLabel("使用オブジェクトID を選択 (28種類)")
+for i = 1, #ObjectIDConfig.AvailableObjects do
+    local id = ObjectIDConfig.AvailableObjects[i]
+    ObjectIDTab:AddButton({Name = id, Callback = function() changeObjectID(id) end})
+end
+
+-- フェザー[羽]タブ
+local FeatherTab = Window:MakeTab({Name = "フェザー[羽]", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+FeatherTab:AddToggle({Name = "フェザー起動", Default = false, Callback = toggleFeather})
+FeatherTab:AddSection({Name = "配置設定"})
+FeatherTab:AddSlider({Name = "最大数", Min = 2, Max = 100, Default = 20, Increment = 2, Callback = function(v) FeatherConfig.maxSparklers = v end})
+FeatherTab:AddSlider({Name = "間隔", Min = 1, Max = 20, Default = 3, Increment = 0.5, Callback = function(v) FeatherConfig.spacing = v end})
+FeatherTab:AddSlider({Name = "高さオフセット", Min = -10, Max = 30, Default = 2, Increment = 0.5, Callback = function(v) FeatherConfig.heightOffset = v end})
+FeatherTab:AddSlider({Name = "背面オフセット", Min = 0, Max = 30, Default = 3, Increment = 0.5, Callback = function(v) FeatherConfig.backwardOffset = v end})
+FeatherTab:AddSection({Name = "角度・動き"})
+FeatherTab:AddSlider({Name = "傾き角度", Min = 0, Max = 90, Default = 45, Increment = 5, Callback = function(v) FeatherConfig.tiltAngle = v end})
+FeatherTab:AddSlider({Name = "上下動速度", Min = 0, Max = 20, Default = 2, Increment = 0.5, Callback = function(v) FeatherConfig.waveSpeed = v end})
+FeatherTab:AddSlider({Name = "振幅", Min = 0, Max = 20, Default = 1, Increment = 0.5, Callback = function(v) FeatherConfig.baseAmplitude = v end})
+
+-- 魔法陣タブ
+local MagicCircleTab = Window:MakeTab({Name = "魔法陣", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+MagicCircleTab:AddToggle({Name = "魔法陣起動", Default = false, Callback = toggleMagicCircle})
+MagicCircleTab:AddSection({Name = "基本設定"})
+MagicCircleTab:AddDropdown({Name = "シンボルタイプ", Default = "Ring", Options = {"Ring","Circle","Hexagram"}, Callback = function(v) MagicCircleConfig.SymbolType = v end})
+MagicCircleTab:AddToggle({Name = "発光効果", Default = true, Callback = function(v) MagicCircleConfig.GlowEffect = v end})
+MagicCircleTab:AddSlider({Name = "高さ", Min = 0, Max = 50, Default = 5, Increment = 1, Callback = function(v) MagicCircleConfig.Height = v end})
+MagicCircleTab:AddSlider({Name = "直径", Min = 5, Max = 50, Default = 5, Increment = 1, Callback = function(v) MagicCircleConfig.Diameter = v end})
+MagicCircleTab:AddSlider({Name = "オブジェクト数", Min = 3, Max = 100, Default = 10, Increment = 1, Callback = function(v) MagicCircleConfig.ObjectCount = v; if MagicCircleConfig.Enabled then rescanMagicCircle() end end})
+MagicCircleTab:AddSlider({Name = "回転速度", Min = 1, Max = 100, Default = 20, Increment = 1, Callback = function(v) MagicCircleConfig.RotationSpeed = v end})
+MagicCircleTab:AddButton({Name = "再スキャン", Callback = function() if MagicCircleConfig.Enabled then rescanMagicCircle() end end})
+
+-- ♡ハート//タブ
+local HeartTab2 = Window:MakeTab({Name = "♡ハート//", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+HeartTab2:AddToggle({Name = "ハート起動", Default = false, Callback = toggleHeart2})
+HeartTab2:AddToggle({Name = "プレイヤー追従", Default = true, Callback = function(v) HeartConfig2.FollowPlayer = v end})
+HeartTab2:AddSection({Name = "サイズ・数"})
+HeartTab2:AddSlider({Name = "ハートサイズ", Min = 2, Max = 50, Default = 5, Increment = 1, Callback = function(v) HeartConfig2.Size = v end})
+HeartTab2:AddSlider({Name = "高さ", Min = 0, Max = 50, Default = 5, Increment = 1, Callback = function(v) HeartConfig2.Height = v end})
+HeartTab2:AddSlider({Name = "オブジェクト数", Min = 6, Max = 100, Default = 12, Increment = 2, Callback = function(v) HeartConfig2.ObjectCount = v; if HeartConfig2.Enabled then toggleHeart2(false); task.wait(0.1); toggleHeart2(true) end end})
+HeartTab2:AddSection({Name = "動き"})
+HeartTab2:AddSlider({Name = "回転速度", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) HeartConfig2.RotationSpeed = v end})
+HeartTab2:AddSlider({Name = "脈動速度", Min = 0, Max = 10, Default = 2, Increment = 0.1, Callback = function(v) HeartConfig2.PulseSpeed = v end})
+HeartTab2:AddSlider({Name = "脈動振幅", Min = 0, Max = 10, Default = 0.5, Increment = 0.1, Callback = function(v) HeartConfig2.PulseAmplitude = v end})
+
+-- おっきぃ♡タブ
+local BigHeartTab2 = Window:MakeTab({Name = "おっきぃ♡", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+BigHeartTab2:AddToggle({Name = "おっきぃ♡起動", Default = false, Callback = toggleBigHeart})
+BigHeartTab2:AddSection({Name = "サイズ"})
+BigHeartTab2:AddSlider({Name = "基本サイズ", Min = 5, Max = 50, Default = 10, Increment = 1, Callback = function(v) BigHeartConfig.Size = v end})
+BigHeartTab2:AddSlider({Name = "拡大率", Min = 1, Max = 10, Default = 2, Increment = 0.1, Callback = function(v) BigHeartConfig.HeartScale = v end})
+BigHeartTab2:AddSlider({Name = "縦引き伸ばし", Min = 1, Max = 5, Default = 1.2, Increment = 0.1, Callback = function(v) BigHeartConfig.VerticalStretch = v end})
+BigHeartTab2:AddSlider({Name = "高さ", Min = 5, Max = 50, Default = 8, Increment = 1, Callback = function(v) BigHeartConfig.Height = v end})
+BigHeartTab2:AddSlider({Name = "オブジェクト数", Min = 12, Max = 100, Default = 20, Increment = 2, Callback = function(v) BigHeartConfig.ObjectCount = v; if BigHeartConfig.Enabled then toggleBigHeart(false); task.wait(0.1); toggleBigHeart(true) end end})
+BigHeartTab2:AddSection({Name = "動き"})
+BigHeartTab2:AddSlider({Name = "回転速度", Min = 0, Max = 10, Default = 0.5, Increment = 0.5, Callback = function(v) BigHeartConfig.RotationSpeed = v end})
+BigHeartTab2:AddSlider({Name = "脈動速度", Min = 0, Max = 10, Default = 1, Increment = 0.5, Callback = function(v) BigHeartConfig.PulseSpeed = v end})
+BigHeartTab2:AddSlider({Name = "脈動振幅", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) BigHeartConfig.PulseAmplitude = v end})
+
+-- ダビデの星✡タブ
+local StarOfDavidTab = Window:MakeTab({Name = "ダビデの星✡", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+StarOfDavidTab:AddToggle({Name = "ダビデの星起動", Default = false, Callback = toggleStarOfDavid})
+StarOfDavidTab:AddSlider({Name = "サイズ", Min = 2, Max = 50, Default = 5, Increment = 1, Callback = function(v) StarOfDavidConfig.Size = v end})
+StarOfDavidTab:AddSlider({Name = "高さ", Min = 0, Max = 50, Default = 5, Increment = 1, Callback = function(v) StarOfDavidConfig.Height = v end})
+StarOfDavidTab:AddSlider({Name = "三角形の高さ", Min = 0, Max = 20, Default = 0.5, Increment = 0.1, Callback = function(v) StarOfDavidConfig.TriangleHeight = v end})
+StarOfDavidTab:AddSlider({Name = "オブジェクト数", Min = 6, Max = 100, Default = 12, Increment = 2, Callback = function(v) StarOfDavidConfig.ObjectCount = v; if StarOfDavidConfig.Enabled then toggleStarOfDavid(false); task.wait(0.1); toggleStarOfDavid(true) end end})
+StarOfDavidTab:AddSlider({Name = "回転速度", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) StarOfDavidConfig.RotationSpeed = v end})
+StarOfDavidTab:AddSlider({Name = "脈動速度", Min = 0, Max = 10, Default = 1.5, Increment = 0.1, Callback = function(v) StarOfDavidConfig.PulseSpeed = v end})
+
+-- スター★タブ
+local StarTab = Window:MakeTab({Name = "スター★", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+StarTab:AddToggle({Name = "スター起動", Default = false, Callback = toggleStar})
+StarTab:AddSlider({Name = "外側半径", Min = 2, Max = 50, Default = 5, Increment = 1, Callback = function(v) StarConfig.OuterRadius = v end})
+StarTab:AddSlider({Name = "内側半径", Min = 1, Max = 30, Default = 2, Increment = 1, Callback = function(v) StarConfig.InnerRadius = v end})
+StarTab:AddSlider({Name = "高さ", Min = 0, Max = 50, Default = 5, Increment = 1, Callback = function(v) StarConfig.Height = v end})
+StarTab:AddSlider({Name = "オブジェクト数", Min = 5, Max = 100, Default = 10, Increment = 1, Callback = function(v) StarConfig.ObjectCount = v; if StarConfig.Enabled then toggleStar(false); task.wait(0.1); toggleStar(true) end end})
+StarTab:AddSlider({Name = "回転速度", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) StarConfig.RotationSpeed = v end})
+StarTab:AddSlider({Name = "きらめき速度", Min = 0, Max = 10, Default = 2, Increment = 0.1, Callback = function(v) StarConfig.TwinkleSpeed = v end})
+
+-- スター2✫タブ
+local Star2Tab = Window:MakeTab({Name = "スター2✫", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+Star2Tab:AddToggle({Name = "スター2起動", Default = false, Callback = toggleStar2})
+Star2Tab:AddSlider({Name = "基本サイズ", Min = 5, Max = 30, Default = 15, Increment = 1, Callback = function(v) Star2Config.Size = v end})
+Star2Tab:AddSlider({Name = "光線の長さ", Min = 1, Max = 10, Default = 3, Increment = 0.5, Callback = function(v) Star2Config.RayLength = v end})
+Star2Tab:AddSlider({Name = "高さ", Min = 5, Max = 50, Default = 10, Increment = 1, Callback = function(v) Star2Config.Height = v end})
+Star2Tab:AddSlider({Name = "光線の数", Min = 6, Max = 36, Default = 12, Increment = 2, Callback = function(v) Star2Config.RayCount = v; if Star2Config.Enabled then toggleStar2(false); task.wait(0.1); toggleStar2(true) end end})
+Star2Tab:AddSlider({Name = "オブジェクト数", Min = 12, Max = 100, Default = 24, Increment = 4, Callback = function(v) Star2Config.ObjectCount = v; if Star2Config.Enabled then toggleStar2(false); task.wait(0.1); toggleStar2(true) end end})
+Star2Tab:AddSlider({Name = "回転速度", Min = 0, Max = 30, Default = 5, Increment = 1, Callback = function(v) Star2Config.RotationSpeed = v end})
+Star2Tab:AddSlider({Name = "脈動速度", Min = 0, Max = 20, Default = 8, Increment = 1, Callback = function(v) Star2Config.PulseSpeed = v end})
+Star2Tab:AddSlider({Name = "脈動振幅", Min = 0, Max = 10, Default = 2, Increment = 0.2, Callback = function(v) Star2Config.PulseAmplitude = v end})
+Star2Tab:AddSlider({Name = "ギザギザ速度", Min = 0, Max = 20, Default = 5, Increment = 0.5, Callback = function(v) Star2Config.JitterSpeed = v end})
+Star2Tab:AddSlider({Name = "ギザギザ量", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) Star2Config.JitterAmount = v end})
+
+-- 球体◯タブ
+local SphereTab = Window:MakeTab({Name = "球体◯", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+SphereTab:AddToggle({Name = "球体起動", Default = false, Callback = toggleSphere})
+SphereTab:AddSlider({Name = "半径", Min = 2, Max = 50, Default = 5, Increment = 1, Callback = function(v) SphereConfig.Radius = v end})
+SphereTab:AddSlider({Name = "基本高さ", Min = -20, Max = 20, Default = 0, Increment = 1, Callback = function(v) SphereConfig.BaseHeight = v end})
+SphereTab:AddSlider({Name = "緯度線", Min = 2, Max = 16, Default = 3, Increment = 1, Callback = function(v) SphereConfig.Latitudes = v; if SphereConfig.Enabled then toggleSphere(false); task.wait(0.1); toggleSphere(true) end end})
+SphereTab:AddSlider({Name = "経度線", Min = 4, Max = 24, Default = 6, Increment = 2, Callback = function(v) SphereConfig.Longitudes = v; if SphereConfig.Enabled then toggleSphere(false); task.wait(0.1); toggleSphere(true) end end})
+SphereTab:AddSlider({Name = "オブジェクト数", Min = 8, Max = 100, Default = 20, Increment = 4, Callback = function(v) SphereConfig.ObjectCount = v; if SphereConfig.Enabled then toggleSphere(false); task.wait(0.1); toggleSphere(true) end end})
+SphereTab:AddSlider({Name = "水平回転速度", Min = 0, Max = 10, Default = 2, Increment = 0.1, Callback = function(v) SphereConfig.HorizontalRotationSpeed = v end})
+SphereTab:AddSlider({Name = "垂直回転速度", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) SphereConfig.VerticalRotationSpeed = v end})
+SphereTab:AddSlider({Name = "波速度", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) SphereConfig.WaveSpeed = v end})
+SphereTab:AddSlider({Name = "波振幅", Min = 0, Max = 10, Default = 0.3, Increment = 0.1, Callback = function(v) SphereConfig.WaveAmplitude = v end})
+SphereTab:AddSlider({Name = "脈動速度", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) SphereConfig.PulseSpeed = v end})
+SphereTab:AddSlider({Name = "脈動振幅", Min = 0, Max = 5, Default = 0.5, Increment = 0.1, Callback = function(v) SphereConfig.PulseAmplitude = v end})
+
+-- 観覧車タブ
+local FerrisTab = Window:MakeTab({Name = "観覧車", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+FerrisTab:AddToggle({Name = "観覧車起動", Default = false, Callback = toggleFerrisWheel})
+FerrisTab:AddToggle({Name = "縦方向円", Default = true, Callback = function(v) FerrisWheelConfig.VerticalCircle = v end})
+FerrisTab:AddSection({Name = "固定方向"})
+FerrisTab:AddToggle({Name = "固定方向を使用", Default = true, Callback = function(v) FerrisWheelConfig.FixedDirection = v end})
+FerrisTab:AddSlider({Name = "固定ヨー角", Min = -180, Max = 180, Default = 0, Increment = 5, Callback = function(v) FerrisWheelConfig.FixedYaw = v end})
+FerrisTab:AddSlider({Name = "固定ピッチ角", Min = -90, Max = 90, Default = 0, Increment = 5, Callback = function(v) FerrisWheelConfig.FixedPitch = v end})
+FerrisTab:AddSlider({Name = "固定ロール角", Min = -180, Max = 180, Default = 0, Increment = 5, Callback = function(v) FerrisWheelConfig.FixedRoll = v end})
+FerrisTab:AddSection({Name = "サイズ・動き"})
+FerrisTab:AddSlider({Name = "半径", Min = 5, Max = 50, Default = 10, Increment = 1, Callback = function(v) FerrisWheelConfig.Radius = v end})
+FerrisTab:AddSlider({Name = "中心高さ", Min = 5, Max = 50, Default = 15, Increment = 1, Callback = function(v) FerrisWheelConfig.Height = v end})
+FerrisTab:AddSlider({Name = "オブジェクト数", Min = 6, Max = 100, Default = 12, Increment = 2, Callback = function(v) FerrisWheelConfig.ObjectCount = v; if FerrisWheelConfig.Enabled then toggleFerrisWheel(false); task.wait(0.1); toggleFerrisWheel(true) end end})
+FerrisTab:AddSlider({Name = "回転速度", Min = 0, Max = 5, Default = 1, Increment = 0.1, Callback = function(v) FerrisWheelConfig.RotationSpeed = v end})
+FerrisTab:AddSection({Name = "効果"})
+FerrisTab:AddToggle({Name = "脈動効果", Default = false, Callback = function(v) FerrisWheelConfig.PulseEffect = v end})
+FerrisTab:AddSlider({Name = "脈動速度", Min = 0, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) FerrisWheelConfig.PulseSpeed = v end})
+FerrisTab:AddSlider({Name = "脈動振幅", Min = 0, Max = 10, Default = 2, Increment = 0.2, Callback = function(v) FerrisWheelConfig.PulseAmplitude = v end})
+FerrisTab:AddToggle({Name = "揺れ効果", Default = false, Callback = function(v) FerrisWheelConfig.SwingEffect = v end})
+FerrisTab:AddSlider({Name = "揺れの大きさ", Min = 0, Max = 10, Default = 0.5, Increment = 0.1, Callback = function(v) FerrisWheelConfig.SwingAmount = v end})
+
+-- N1: カオス・サークルタブ
+local AnimN1Tab = Window:MakeTab({Name = "N1: カオス・サークル", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+AnimN1Tab:AddToggle({Name = "N1起動", Default = false, Callback = toggleAnimN1})
+AnimN1Tab:AddSlider({Name = "半径", Min = 5, Max = 50, Default = 15, Increment = 1, Callback = function(v) AnimN1Config.Radius = v end})
+AnimN1Tab:AddSlider({Name = "高さ", Min = 0, Max = 50, Default = 10, Increment = 1, Callback = function(v) AnimN1Config.Height = v end})
+AnimN1Tab:AddSlider({Name = "オブジェクト数", Min = 10, Max = 100, Default = 50, Increment = 2, Callback = function(v) AnimN1Config.ObjectCount = v; if AnimN1Config.Enabled then toggleAnimN1(false); task.wait(0.1); toggleAnimN1(true) end end})
+AnimN1Tab:AddSlider({Name = "回転速度", Min = 0, Max = 50, Default = 20, Increment = 1, Callback = function(v) AnimN1Config.RotationSpeed = v end})
+AnimN1Tab:AddSlider({Name = "脈動速度", Min = 0, Max = 20, Default = 5, Increment = 0.5, Callback = function(v) AnimN1Config.PulseSpeed = v end})
+AnimN1Tab:AddSlider({Name = "脈動量", Min = 0, Max = 30, Default = 10, Increment = 1, Callback = function(v) AnimN1Config.PulseAmount = v end})
+
+-- N2: トルネード・スパイラルタブ
+local AnimN2Tab = Window:MakeTab({Name = "N2: トルネード・スパイラル", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+AnimN2Tab:AddToggle({Name = "N2起動", Default = false, Callback = toggleAnimN2})
+AnimN2Tab:AddSlider({Name = "半径", Min = 3, Max = 30, Default = 8, Increment = 1, Callback = function(v) AnimN2Config.Radius = v end})
+AnimN2Tab:AddSlider({Name = "最低高さ", Min = 0, Max = 20, Default = 5, Increment = 1, Callback = function(v) AnimN2Config.BaseHeight = v end})
+AnimN2Tab:AddSlider({Name = "最高高さ", Min = 10, Max = 100, Default = 30, Increment = 1, Callback = function(v) AnimN2Config.TopHeight = v end})
+AnimN2Tab:AddSlider({Name = "オブジェクト数", Min = 10, Max = 100, Default = 60, Increment = 2, Callback = function(v) AnimN2Config.ObjectCount = v; if AnimN2Config.Enabled then toggleAnimN2(false); task.wait(0.1); toggleAnimN2(true) end end})
+AnimN2Tab:AddSlider({Name = "回転速度", Min = 0, Max = 50, Default = 15, Increment = 1, Callback = function(v) AnimN2Config.RotationSpeed = v end})
+AnimN2Tab:AddSlider({Name = "上昇速度", Min = 0, Max = 10, Default = 2, Increment = 0.2, Callback = function(v) AnimN2Config.RiseSpeed = v end})
+AnimN2Tab:AddSlider({Name = "カオス要素", Min = 0, Max = 10, Default = 3, Increment = 0.2, Callback = function(v) AnimN2Config.ChaosFactor = v end})
+
+-- N3: ハイパー・エクスプロージョンタブ
+local AnimN3Tab = Window:MakeTab({Name = "N3: ハイパー・エクスプロージョン", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+AnimN3Tab:AddToggle({Name = "N3起動", Default = false, Callback = toggleAnimN3})
+AnimN3Tab:AddSlider({Name = "基本高さ", Min = 0, Max = 50, Default = 8, Increment = 1, Callback = function(v) AnimN3Config.Height = v end})
+AnimN3Tab:AddSlider({Name = "爆発半径", Min = 5, Max = 100, Default = 25, Increment = 1, Callback = function(v) AnimN3Config.ExplosionRadius = v end})
+AnimN3Tab:AddSlider({Name = "オブジェクト数", Min = 10, Max = 100, Default = 80, Increment = 2, Callback = function(v) AnimN3Config.ObjectCount = v; if AnimN3Config.Enabled then toggleAnimN3(false); task.wait(0.1); toggleAnimN3(true) end end})
+AnimN3Tab:AddSlider({Name = "サイクル速度", Min = 0, Max = 5, Default = 2, Increment = 0.1, Callback = function(v) AnimN3Config.CycleSpeed = v end})
+AnimN3Tab:AddSlider({Name = "爆発速度", Min = 1, Max = 20, Default = 10, Increment = 0.5, Callback = function(v) AnimN3Config.ExplosionSpeed = v end})
+AnimN3Tab:AddSlider({Name = "ランダム性", Min = 0, Max = 20, Default = 5, Increment = 0.5, Callback = function(v) AnimN3Config.Randomness = v end})
+
+-- アニメーション全停止ボタン（共通）
+AnimN3Tab:AddButton({Name = "全アニメーション停止", Callback = stopAllAnimations})
+
+-- スクリプトhubタブ
+local ScriptHubTab = Window:MakeTab({Name = "スクリプトhub", Icon = "rbxassetid://101768155599700", PremiumOnly = false})
+ScriptHubTab:AddSection({Name = "外部スクリプト"})
+ScriptHubTab:AddButton({Name = "シェーダー", Callback = function() executeScript("https://rawscripts.net/raw/Universal-Script-Shader-77482","シェーダー") end})
+ScriptHubTab:AddButton({Name = "空変え", Callback = function() executeScript("https://rawscripts.net/raw/Universal-Script-SkyBoxinjectHUB-80671","空変え") end})
+ScriptHubTab:AddButton({Name = "テトリス", Callback = function() executeScript("https://rawscripts.net/raw/Universal-Script-RTetris-76191","テトリス") end})
+ScriptHubTab:AddButton({Name = "クロスケ作 v式飛行", Callback = function() executeScript("https://rawscripts.net/raw/Universal-Script-VFly-gui-and-noclip-78112","v式飛行") end})
+
+-- 情報とサポートタブ
+local InfoTab = Window:MakeTab({Name = "情報とサポート", Icon = "rbxassetid://4483362458", PremiumOnly = false})
+InfoTab:AddSection({Name = "バージョン情報"})
+InfoTab:AddLabel("Tsukuyomihub やおよろー！")
+InfoTab:AddLabel("さくらhub v0.6 統合")
 OrionLib:Init()
