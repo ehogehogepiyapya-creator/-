@@ -2,41 +2,6 @@ print("Tsukuyomihub やおよろー！")
 
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/jadpy/suki/refs/heads/main/orion"))()
 
--- ピンクグラデーションエフェクト（自動適用）
-local function applyPinkGradientEffect()
-    local CoreGui = game:GetService("CoreGui")
-    local _Players2 = game:GetService("Players")
-    local _time2 = 0
-    local _strokes2 = {}
-    local function _reg2(obj)
-        if obj:IsA("UIStroke") then table.insert(_strokes2, obj) end
-    end
-    local function _scan2(gui)
-        for _, v in ipairs(gui:GetDescendants()) do _reg2(v) end
-        gui.DescendantAdded:Connect(_reg2)
-    end
-    local _plr2 = _Players2.LocalPlayer
-    if _plr2 then
-        local _pg2 = _plr2:WaitForChild("PlayerGui")
-        pcall(_scan2, CoreGui)
-        pcall(_scan2, _pg2)
-    end
-    local function _pinkColor(t)
-        local c = {Color3.fromRGB(255,182,193), Color3.fromRGB(255,105,180), Color3.fromRGB(219,112,147)}
-        local p = (math.sin(t*2)+1)/2
-        if p < 0.5 then return c[1]:Lerp(c[2], p*2) else return c[2]:Lerp(c[3], (p-0.5)*2) end
-    end
-    game:GetService("RunService").RenderStepped:Connect(function(dt)
-        _time2 = _time2 + dt*0.5
-        for i = #_strokes2, 1, -1 do
-            local s = _strokes2[i]
-            if s and s.Parent then s.Color = _pinkColor(_time2 + i*0.01)
-            else table.remove(_strokes2, i) end
-        end
-    end)
-end
-pcall(applyPinkGradientEffect)
-
 local service = {
 	Workspace = game:GetService("Workspace"),
 	Players = game:GetService("Players"),
@@ -2845,11 +2810,10 @@ end
 
 local Window = OrionLib:MakeWindow({
     Name = "Tsukuyomihub やおよろー！",
+    HidePremium = false,
     SaveConfig = true,
     ConfigFolder = "Tsukuyomihub",
-    IntroEnabled = true,
-    IntroText = "Tsukuyomihub やおよろー！",
-    IntroIcon = "rbxassetid://118739401073899",
+    IntroEnabled = false,
     Icon = "rbxassetid://118739401073899",
     FreeMouse = true,
     KeyToOpenWindow = "M"
@@ -7064,5 +7028,8 @@ ScriptHubTab:AddButton({Name = "クロスケ作 v式飛行", Callback = function
 local InfoTab = Window:MakeTab({Name = "情報とサポート", Icon = "rbxassetid://4483362458", PremiumOnly = false})
 InfoTab:AddSection({Name = "バージョン情報"})
 InfoTab:AddLabel("Tsukuyomihub やおよろー！")
-InfoTab:AddLabel("さくらhub v0.6 統合")
+InfoTab:AddLabel("さくらhub v0.6 統合版")
+InfoTab:AddSection({Name = "リンク"})
+InfoTab:AddButton({Name = "ディスコードをコピー", Callback = function() copyToClipboard("https://discord.gg/6u4pjQrEsC","ディスコード") end})
+InfoTab:AddButton({Name = "LINEオープンチャットをコピー", Callback = function() copyToClipboard("https://line.me/ti/g2/-CBPty1N0v2XuNPqaJm5xLmCBt0wBr3_vxrOqQ","LINE") end})
 OrionLib:Init()
